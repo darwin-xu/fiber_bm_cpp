@@ -15,7 +15,7 @@
 
 #include <sys/select.h>
 
-#include "separated.h"
+#include "separated.hpp"
 
 using IntVector    = std::vector<int>;
 using ThreadVector = std::vector<std::thread>;

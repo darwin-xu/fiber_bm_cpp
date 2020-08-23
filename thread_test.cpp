@@ -15,15 +15,13 @@
 
 #include <sys/select.h>
 
-#include "separated.h"
+#include "separated.hpp"
 
 using IntVector    = std::vector<int>;
 using ThreadVector = std::vector<std::thread>;
 
 std::string QUERY_TEXT    = "STATUS";
 std::string RESPONSE_TEXT = "OK";
-
-bool done = false;
 
 template<class Function>
 void readOrWrite(int fd, std::string& str, Function&& f)
@@ -113,23 +111,22 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
-    std::thread mt([&master_read, &master_write]() {
-        while (!master_read.empty() && !master_write.empty())
+    std::thread mt([workers_num, requests_num, &master_read, &master_write]() {
+        auto pendingItems = workers_num * requests_num;
+        while (pendingItems > 0)
         {
             auto [readable, writeable] = sselect(master_read, master_write);
 
-            if (done)
-                return;
-
             for (auto fd : readable) { readOrWrite(fd, RESPONSE_TEXT, read); }
-            for (auto fd : writeable) { readOrWrite(fd, QUERY_TEXT, write); }
+            for (auto fd : writeable)
+            {
+                readOrWrite(fd, QUERY_TEXT, write);
+                --pendingItems;
+            }
         }
     });
 
     for (auto& w : workers) { w.join(); }
-
-    done = true;
-
     mt.join();
 
     auto end        = std::chrono::steady_clock::now();

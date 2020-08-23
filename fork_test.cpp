@@ -16,7 +16,7 @@
 #include <sys/select.h>
 #include <sys/wait.h>
 
-#include "separated.h"
+#include "separated.hpp"
 
 using IntVector    = std::vector<int>;
 using ThreadVector = std::vector<std::thread>;
@@ -25,8 +25,6 @@ using PIDVector    = std::vector<pid_t>;
 
 std::string QUERY_TEXT    = "STATUS";
 std::string RESPONSE_TEXT = "OK";
-
-bool done = false;
 
 template<class Function>
 void readOrWrite(int fd, std::string& str, Function&& f)
@@ -89,9 +87,6 @@ int main(int argc, char* argv[])
     IntVector master_read;
     IntVector master_write;
 
-    IntIntMap writable_idx;
-    IntIntMap readable_idx;
-
     for (int i = 0; i < workers_num; ++i)
     {
         int fildes[2];
@@ -99,12 +94,10 @@ int main(int argc, char* argv[])
         assert(pipe(fildes) == 0);
         worker_read.push_back(fildes[0]);
         master_write.push_back(fildes[1]);
-        writable_idx[fildes[1]] = i;
 
         assert(pipe(fildes) == 0);
         master_read.push_back(fildes[0]);
         worker_write.push_back(fildes[1]);
-        readable_idx[fildes[0]] = i;
     }
 
     PIDVector pv;
@@ -133,35 +126,22 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
-    std::thread mt(
-        [&master_read, &master_write, &writable_idx, &readable_idx, &pending_write_msgs, &pending_read_msgs]() {
-            while (!master_read.empty() && !master_write.empty())
+    std::thread mt([workers_num, requests_num, &master_read, &master_write]() {
+        auto pendingItems = workers_num * requests_num;
+        while (pendingItems > 0)
+        {
+            auto [readable, writeable] = sselect(master_read, master_write);
+
+            for (auto fd : readable) { readOrWrite(fd, RESPONSE_TEXT, read); }
+            for (auto fd : writeable)
             {
-                auto [readable, writeable] = sselect(master_read, master_write);
-
-                if (done)
-                    return;
-
-                for (auto fd : readable)
-                {
-                    readOrWrite(fd, RESPONSE_TEXT, read);
-                    if (--pending_read_msgs[readable_idx[fd]] == 0)
-                        master_read.erase(std::remove(master_read.begin(), master_read.end(), fd), master_read.end());
-                }
-                for (auto fd : writeable)
-                {
-                    readOrWrite(fd, QUERY_TEXT, write);
-                    if (--pending_write_msgs[writable_idx[fd]] == 0)
-                        master_write.erase(std::remove(master_write.begin(), master_write.end(), fd),
-                                           master_write.end());
-                }
+                readOrWrite(fd, QUERY_TEXT, write);
+                --pendingItems;
             }
-        });
+        }
+    });
 
     for (auto& pid : pv) { waitpid(pid, NULL, 0); }
-
-    done = true;
-
     mt.join();
 
     auto end        = std::chrono::steady_clock::now();
