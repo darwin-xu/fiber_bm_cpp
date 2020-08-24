@@ -2,13 +2,21 @@
 #include <thread>
 #include <string>
 #include <chrono>
+#include <map>
 
+#include <string.h>
+#include <assert.h>
+
+#include <unistd.h>
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/uio.h>
+#include <sys/wait.h>
 
 using IntVector    = std::vector<int>;
 using ThreadVector = std::vector<std::thread>;
+using PIDVector    = std::vector<pid_t>;
+using IntIntMap    = std::map<int, int>;
 
 extern std::string QUERY_TEXT;
 extern std::string RESPONSE_TEXT;
@@ -29,6 +37,8 @@ void readOrWrite(int fd, std::string& str, Function&& f)
         remain -= r;
     } while (remain != 0);
 }
+
+std::pair<IntVector, IntVector> sselect(const IntVector& rds, const IntVector& wts);
 
 using TP = decltype(std::chrono::steady_clock::now());
 

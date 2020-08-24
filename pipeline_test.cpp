@@ -12,6 +12,7 @@ int main(int argc, char* argv[])
     assert(pipe(fildes2) == 0);
 
     auto start = std::chrono::steady_clock::now();
+
     for (int i = 0; i < requests_num; ++i)
     {
         readOrWrite(fildes1[1], QUERY_TEXT, write);
@@ -19,6 +20,7 @@ int main(int argc, char* argv[])
         readOrWrite(fildes2[1], RESPONSE_TEXT, write);
         readOrWrite(fildes2[0], RESPONSE_TEXT, read);
     }
+
     auto end = std::chrono::steady_clock::now();
 
     printStat(start, end, requests_num);
