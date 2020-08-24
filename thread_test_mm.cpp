@@ -50,8 +50,10 @@ int main(int argc, char* argv[])
         });
     }
 
-    for (auto& w : workers) { w.join(); }
-    for (auto& m : masters) { m.join(); }
+    for (auto& w : workers)
+        w.join();
+    for (auto& m : masters)
+        m.join();
 
     auto end = std::chrono::steady_clock::now();
 

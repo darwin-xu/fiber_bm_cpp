@@ -4,5 +4,8 @@
 
 struct separated : std::numpunct<char>
 {
-    std::string do_grouping() const { return "\03"; }
+    std::string do_grouping() const
+    {
+        return "\03";
+    }
 };

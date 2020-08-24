@@ -44,7 +44,8 @@ int main(int argc, char* argv[])
         {
             auto [readable, writeable] = sselect(master_read, master_write);
 
-            for (auto fd : readable) { readOrWrite(fd, RESPONSE_TEXT, read); }
+            for (auto fd : readable)
+                readOrWrite(fd, RESPONSE_TEXT, read);
             for (auto fd : writeable)
             {
                 readOrWrite(fd, QUERY_TEXT, write);
@@ -53,7 +54,8 @@ int main(int argc, char* argv[])
         }
     });
 
-    for (auto& w : workers) { w.join(); }
+    for (auto& w : workers)
+        w.join();
     mt.join();
 
     auto end = std::chrono::steady_clock::now();

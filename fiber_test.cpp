@@ -51,7 +51,8 @@ std::pair<IntVector, IntVector> sselect(const IntVector& rds, const IntVector& w
     FD_ZERO(&wtSet);
 
     auto setFD_SET = [](const IntVector& fds, fd_set& set) {
-        for (auto fd : fds) { FD_SET(fd, &set); }
+        for (auto fd : fds)
+            FD_SET(fd, &set);
     };
 
     setFD_SET(rds, rdSet);
@@ -121,12 +122,15 @@ int main(int argc, char* argv[])
             if (done)
                 return;
 
-            for (auto fd : readable) { readOrWrite(fd, RESPONSE_TEXT, read); }
-            for (auto fd : writeable) { readOrWrite(fd, QUERY_TEXT, write); }
+            for (auto fd : readable)
+                readOrWrite(fd, RESPONSE_TEXT, read);
+            for (auto fd : writeable)
+                readOrWrite(fd, QUERY_TEXT, write);
         }
     });
 
-    for (auto& w : workers) { w.join(); }
+    for (auto& w : workers)
+        w.join();
 
     done = true;
 

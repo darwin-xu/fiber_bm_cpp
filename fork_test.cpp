@@ -45,7 +45,8 @@ int main(int argc, char* argv[])
     }
 
     IntIntMap pending_write_msgs;
-    for (int i = 0; i < workers_num; ++i) { pending_write_msgs[i] = requests_num; }
+    for (int i = 0; i < workers_num; ++i)
+        pending_write_msgs[i] = requests_num;
     IntIntMap pending_read_msgs = pending_write_msgs;
 
     auto start = std::chrono::steady_clock::now();
@@ -56,7 +57,8 @@ int main(int argc, char* argv[])
         {
             auto [readable, writeable] = sselect(master_read, master_write);
 
-            for (auto fd : readable) { readOrWrite(fd, RESPONSE_TEXT, read); }
+            for (auto fd : readable)
+                readOrWrite(fd, RESPONSE_TEXT, read);
             for (auto fd : writeable)
             {
                 readOrWrite(fd, QUERY_TEXT, write);
@@ -65,7 +67,8 @@ int main(int argc, char* argv[])
         }
     });
 
-    for (auto& pid : pv) { waitpid(pid, NULL, 0); }
+    for (auto& pid : pv)
+        waitpid(pid, NULL, 0);
     mt.join();
 
     auto end = std::chrono::steady_clock::now();

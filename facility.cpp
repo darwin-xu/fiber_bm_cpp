@@ -18,7 +18,8 @@ std::pair<IntVector, IntVector> sselect(const IntVector& rds, const IntVector& w
     FD_ZERO(&wtSet);
 
     auto setFD_SET = [](const IntVector& fds, fd_set& set) {
-        for (auto fd : fds) { FD_SET(fd, &set); }
+        for (auto fd : fds)
+            FD_SET(fd, &set);
     };
 
     setFD_SET(rds, rdSet);
