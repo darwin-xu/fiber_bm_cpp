@@ -1,81 +1,36 @@
-#include <string>
-#include <thread>
-#include <vector>
-#include <map>
-#include <utility>
-#include <memory>
-#include <iostream>
-#include <chrono>
-#include <iomanip>
+#include <boost/fiber/all.hpp>
 
-#include <assert.h>
-#include <unistd.h>
-#include <string.h>
-#include <string.h>
-
-#include <sys/select.h>
-
+#include "facility.hpp"
 #include "separated.hpp"
 
-using IntVector    = std::vector<int>;
-using ThreadVector = std::vector<std::thread>;
-
-std::string QUERY_TEXT    = "STATUS";
-std::string RESPONSE_TEXT = "OK";
-
-bool done = false;
-
-template<class Function>
-void readOrWrite(int fd, std::string& str, Function&& f)
+class FiberFlag
 {
-    std::unique_ptr<char[]> temp = std::make_unique<char[]>(str.length());
-    auto                    buf  = temp.get();
-
-    memcpy(buf, str.c_str(), str.length());
-    size_t remain = str.length();
-    do
+public:
+    void wait()
     {
-        int r = f(fd, buf, remain);
-        assert(r >= 0);
-        buf += r;
-        remain -= r;
-    } while (remain != 0);
-}
+        std::unique_lock<boost::fibers::mutex> l(*m);
+        c->wait(
+            l,
+            [this]() -> auto { return f; });
+        f = false;
+    }
 
-std::pair<IntVector, IntVector> sselect(const IntVector& rds, const IntVector& wts)
-{
-    fd_set rdSet;
-    fd_set wtSet;
-
-    FD_ZERO(&rdSet);
-    FD_ZERO(&wtSet);
-
-    auto setFD_SET = [](const IntVector& fds, fd_set& set) {
-        for (auto fd : fds)
-            FD_SET(fd, &set);
-    };
-
-    setFD_SET(rds, rdSet);
-    setFD_SET(wts, wtSet);
-
-    struct timeval timeout;
-    timeout.tv_sec  = 10;
-    timeout.tv_usec = 1000;
-
-    assert(select(FD_SETSIZE, &rdSet, &wtSet, NULL, &timeout) != -1);
-
-    auto getFD_SET = [](const IntVector& fds, const fd_set& set) -> IntVector {
-        IntVector retSet;
-        for (auto fd : fds)
+    void notify()
+    {
+        std::unique_lock<boost::fibers::mutex> l(*m);
+        if (!f)
         {
-            if (FD_ISSET(fd, &set))
-                retSet.push_back(fd);
+            f = true;
+            c->notify_one();
+            boost::this_fiber::yield();
         }
-        return retSet;
-    };
+    }
 
-    return std::make_pair(getFD_SET(rds, rdSet), getFD_SET(wts, wtSet));
-}
+private:
+    bool                                               f = false;
+    std::unique_ptr<boost::fibers::mutex>              m = std::make_unique<boost::fibers::mutex>();
+    std::unique_ptr<boost::fibers::condition_variable> c = std::make_unique<boost::fibers::condition_variable>();
+};
 
 int main(int argc, char* argv[])
 {
@@ -100,49 +55,128 @@ int main(int argc, char* argv[])
         worker_write.push_back(fildes[1]);
     }
 
-    ThreadVector workers;
+    using FiberVector = std::vector<boost::fibers::fiber>;
+    using MutexVector = std::vector<std::unique_ptr<boost::fibers::mutex>>;
+    using CondVector  = std::vector<std::unique_ptr<boost::fibers::condition_variable>>;
+    using IntContMap  = std::map<int, boost::fibers::condition_variable*>;
+    using FFVector    = std::vector<FiberFlag>;
+    using IntFFMap    = std::map<int, FiberFlag*>;
+
+    FiberVector fv;
+    MutexVector mv;
+    CondVector  cvRead;
+    CondVector  cvWrite;
+    IntContMap  rd2Cond;
+    IntContMap  wt2Cond;
+    FFVector    ffvRead;
+    FFVector    ffvWrite;
+    IntFFMap    rd2ff;
+    IntFFMap    wt2ff;
+
+    ffvRead.resize(workers_num);
+    ffvWrite.resize(workers_num);
+
     for (int i = 0; i < workers_num; ++i)
     {
-        workers.emplace_back([i, requests_num, &worker_read, &worker_write]() {
+        mv.emplace_back(std::make_unique<boost::fibers::mutex>());
+        cvRead.emplace_back(std::make_unique<boost::fibers::condition_variable>());
+        cvWrite.emplace_back(std::make_unique<boost::fibers::condition_variable>());
+        rd2Cond[worker_read[i]]  = cvRead[i].get();
+        wt2Cond[worker_write[i]] = cvWrite[i].get();
+        rd2ff[worker_read[i]]    = &ffvRead[i];
+        wt2ff[worker_write[i]]   = &ffvWrite[i];
+
+        fv.emplace_back([i, requests_num, &mv, &cvRead, &cvWrite, &worker_read, &worker_write, &ffvRead, &ffvWrite]() {
             for (int n = 0; n < requests_num; ++n)
             {
+                std::cout << "f " << i << "-" << n << ", wait read on " << worker_read[i] << std::endl;
+                // std::unique_lock<boost::fibers::mutex> l(*mv[i]);
+                // cvRead[i]->wait(l);
+                // readOrWrite(worker_read[i], QUERY_TEXT, read);
+                // cvWrite[i]->wait(l);
+                // readOrWrite(worker_write[i], RESPONSE_TEXT, write);
+                ffvRead[i].wait();
                 readOrWrite(worker_read[i], QUERY_TEXT, read);
+
+                std::cout << "f " << i << "-" << n << ", wait write on " << worker_write[i] << std::endl;
+                ffvWrite[i].wait();
                 readOrWrite(worker_write[i], RESPONSE_TEXT, write);
             }
         });
     }
 
+    boost::fibers::fiber reactorFiber([&rd2Cond, &wt2Cond, &worker_read, &worker_write, &rd2ff, &wt2ff]() {
+        auto [readable, writeable] = sselect(worker_read, worker_write);
+
+        auto notifyAndYield = [](const IntVector& iv, IntFFMap& ifm) {
+            for (auto fd : iv)
+            {
+                std::cout << "r" << fd << " " << std::endl;
+                ifm[fd]->notify();
+            }
+        };
+        notifyAndYield(readable, rd2ff);
+        notifyAndYield(writeable, wt2ff);
+    });
+
     auto start = std::chrono::steady_clock::now();
 
-    std::thread mt([&master_read, &master_write]() {
-        while (!master_read.empty() && !master_write.empty())
+    std::thread mt([workers_num, requests_num, &master_read, &master_write]() {
+        auto pendingItems = workers_num * requests_num;
+        while (pendingItems > 0)
         {
             auto [readable, writeable] = sselect(master_read, master_write);
-
-            if (done)
-                return;
 
             for (auto fd : readable)
                 readOrWrite(fd, RESPONSE_TEXT, read);
             for (auto fd : writeable)
+            {
                 readOrWrite(fd, QUERY_TEXT, write);
+                --pendingItems;
+            }
         }
     });
 
-    for (auto& w : workers)
-        w.join();
-
-    done = true;
+    for (auto& f : fv)
+        f.join();
 
     mt.join();
 
-    auto end        = std::chrono::steady_clock::now();
-    auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    auto workload   = (double)workers_num * requests_num;
+    auto end = std::chrono::steady_clock::now();
 
-    std::cout << "elapsed time(ms): " << elapsed_ms << std::endl;
-    std::cout << "items per second: " << std::fixed << std::setprecision(0) << workload * 1000 / elapsed_ms
-              << std::endl;
+    printStat(start, end, static_cast<double>(workers_num * requests_num));
+
+    // reactorFiber.join();
+
+    return 0;
+}
+
+int xmain(int argc, char* argv[])
+{
+    boost::fibers::mutex              mtx;
+    boost::fibers::condition_variable cond;
+
+    boost::fibers::fiber f2([&mtx, &cond]() {
+        for (int i = 0; i < 5; ++i)
+        {
+            cond.notify_one();
+            std::cout << "f2" << std::endl;
+            boost::this_fiber::yield();
+        }
+    });
+
+    boost::fibers::fiber f1([&mtx, &cond]() {
+        for (int i = 0; i < 5; ++i)
+        {
+            std::unique_lock<boost::fibers::mutex> lk(mtx);
+            std::cout << "f1 {" << std::endl;
+            cond.wait(lk);
+            std::cout << "f1 }" << std::endl;
+        }
+    });
+
+    f1.join();
+    f2.join();
 
     return 0;
 }

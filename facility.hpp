@@ -3,6 +3,7 @@
 #include <string>
 #include <chrono>
 #include <map>
+#include <memory>
 
 #include <string.h>
 #include <assert.h>
