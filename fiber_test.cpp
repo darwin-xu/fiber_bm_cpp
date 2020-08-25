@@ -3,11 +3,16 @@
 #include "facility.hpp"
 #include "separated.hpp"
 
-class FiberFlag
+class Flag;
+
+using Int2FlagMap = std::map<int, Flag*>;
+
+class Flag
 {
 public:
-    void wait()
+    void wait(int fd, Int2FlagMap& ifm)
     {
+        ifm[fd] = this;
         std::unique_lock<boost::fibers::mutex> l(*m);
         c->wait(
             l,
@@ -15,9 +20,9 @@ public:
         f = false;
     }
 
-    void notify()
+    void notify(int fd, Int2FlagMap& ifm)
     {
-        std::unique_lock<boost::fibers::mutex> l(*m);
+        ifm.erase(fd);
         if (!f)
         {
             f = true;
@@ -56,67 +61,53 @@ int main(int argc, char* argv[])
     }
 
     using FiberVector = std::vector<boost::fibers::fiber>;
-    using MutexVector = std::vector<std::unique_ptr<boost::fibers::mutex>>;
-    using CondVector  = std::vector<std::unique_ptr<boost::fibers::condition_variable>>;
-    using IntContMap  = std::map<int, boost::fibers::condition_variable*>;
-    using FFVector    = std::vector<FiberFlag>;
-    using IntFFMap    = std::map<int, FiberFlag*>;
+    using FlagVector  = std::vector<Flag>;
 
     FiberVector fv;
-    MutexVector mv;
-    CondVector  cvRead;
-    CondVector  cvWrite;
-    IntContMap  rd2Cond;
-    IntContMap  wt2Cond;
-    FFVector    ffvRead;
-    FFVector    ffvWrite;
-    IntFFMap    rd2ff;
-    IntFFMap    wt2ff;
+    FlagVector  fvRead;
+    FlagVector  fvWrite;
+    Int2FlagMap ifmRead;
+    Int2FlagMap ifmWrite;
 
-    ffvRead.resize(workers_num);
-    ffvWrite.resize(workers_num);
+    fvRead.resize(workers_num);
+    fvWrite.resize(workers_num);
 
     for (int i = 0; i < workers_num; ++i)
     {
-        mv.emplace_back(std::make_unique<boost::fibers::mutex>());
-        cvRead.emplace_back(std::make_unique<boost::fibers::condition_variable>());
-        cvWrite.emplace_back(std::make_unique<boost::fibers::condition_variable>());
-        rd2Cond[worker_read[i]]  = cvRead[i].get();
-        wt2Cond[worker_write[i]] = cvWrite[i].get();
-        rd2ff[worker_read[i]]    = &ffvRead[i];
-        wt2ff[worker_write[i]]   = &ffvWrite[i];
-
-        fv.emplace_back([i, requests_num, &mv, &cvRead, &cvWrite, &worker_read, &worker_write, &ffvRead, &ffvWrite]() {
+        fv.emplace_back([i, requests_num, &worker_read, &worker_write, &fvRead, &fvWrite, &ifmRead, &ifmWrite]() {
             for (int n = 0; n < requests_num; ++n)
             {
-                std::cout << "f " << i << "-" << n << ", wait read on " << worker_read[i] << std::endl;
-                // std::unique_lock<boost::fibers::mutex> l(*mv[i]);
-                // cvRead[i]->wait(l);
-                // readOrWrite(worker_read[i], QUERY_TEXT, read);
-                // cvWrite[i]->wait(l);
-                // readOrWrite(worker_write[i], RESPONSE_TEXT, write);
-                ffvRead[i].wait();
+                fvRead[i].wait(worker_read[i], ifmRead);
                 readOrWrite(worker_read[i], QUERY_TEXT, read);
 
-                std::cout << "f " << i << "-" << n << ", wait write on " << worker_write[i] << std::endl;
-                ffvWrite[i].wait();
+                fvWrite[i].wait(worker_write[i], ifmWrite);
                 readOrWrite(worker_write[i], RESPONSE_TEXT, write);
             }
         });
     }
 
-    boost::fibers::fiber reactorFiber([&rd2Cond, &wt2Cond, &worker_read, &worker_write, &rd2ff, &wt2ff]() {
-        auto [readable, writeable] = sselect(worker_read, worker_write);
+    boost::fibers::fiber reactorFiber([&worker_read, &worker_write, &ifmRead, &ifmWrite]() {
+        while (true)
+        {
+            auto map2vector = [](const Int2FlagMap& ifm) {
+                IntVector iv;
+                for (auto& a : ifm)
+                    iv.push_back(a.first);
+                return iv;
+            };
 
-        auto notifyAndYield = [](const IntVector& iv, IntFFMap& ifm) {
-            for (auto fd : iv)
-            {
-                std::cout << "r" << fd << " " << std::endl;
-                ifm[fd]->notify();
-            }
-        };
-        notifyAndYield(readable, rd2ff);
-        notifyAndYield(writeable, wt2ff);
+            if (ifmRead.empty() && ifmWrite.empty())
+                break;
+
+            auto [readable, writeable] = sselect(map2vector(ifmRead), map2vector(ifmWrite));
+
+            auto notifyAndYield = [](const IntVector& iv, Int2FlagMap& ifm) {
+                for (auto fd : iv)
+                    ifm[fd]->notify(fd, ifm);
+            };
+            notifyAndYield(readable, ifmRead);
+            notifyAndYield(writeable, ifmWrite);
+        }
     });
 
     auto start = std::chrono::steady_clock::now();
@@ -131,6 +122,7 @@ int main(int argc, char* argv[])
                 readOrWrite(fd, RESPONSE_TEXT, read);
             for (auto fd : writeable)
             {
+                // std::cout << "write to: " << fd << std::endl;
                 readOrWrite(fd, QUERY_TEXT, write);
                 --pendingItems;
             }
@@ -139,6 +131,7 @@ int main(int argc, char* argv[])
 
     for (auto& f : fv)
         f.join();
+    reactorFiber.join();
 
     mt.join();
 
@@ -146,12 +139,10 @@ int main(int argc, char* argv[])
 
     printStat(start, end, static_cast<double>(workers_num * requests_num));
 
-    // reactorFiber.join();
-
     return 0;
 }
 
-int xmain(int argc, char* argv[])
+int zmain(int argc, char* argv[])
 {
     boost::fibers::mutex              mtx;
     boost::fibers::condition_variable cond;

@@ -17,7 +17,7 @@
 using IntVector    = std::vector<int>;
 using ThreadVector = std::vector<std::thread>;
 using PIDVector    = std::vector<pid_t>;
-using IntIntMap    = std::map<int, int>;
+using Int2IntMap   = std::map<int, int>;
 
 extern std::string QUERY_TEXT;
 extern std::string RESPONSE_TEXT;

@@ -18,6 +18,7 @@ add_executable(thread_test_mm thread_test_mm.cpp facility.cpp)
 add_executable(fork_test fork_test.cpp facility.cpp)
 add_executable(fiber_test fiber_test.cpp facility.cpp)
 add_executable(pipeline_test pipeline_test.cpp facility.cpp)
+add_executable(thread_test_opt thread_test_opt.cpp facility.cpp)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

@@ -24,30 +24,20 @@ int main(int argc, char* argv[])
         worker_write.push_back(fildes[1]);
     }
 
-    PIDVector pv;
-    for (int i = 0; i < workers_num; ++i)
-    {
-        auto pid = fork();
-        assert(pid >= 0);
-        if (pid == 0)
+    std::thread wk([workers_num, requests_num, &worker_read, &worker_write]() {
+        auto pendingItems = workers_num * requests_num;
+        while (pendingItems > 0)
         {
-            for (int n = 0; n < requests_num; ++n)
+            auto [readable, writeable] = sselect(worker_read, worker_write);
+            for (auto fd : readable)
             {
-                readOrWrite(worker_read[i], QUERY_TEXT, read);
-                readOrWrite(worker_write[i], RESPONSE_TEXT, write);
+                readOrWrite(fd, QUERY_TEXT, read);
+                --pendingItems;
             }
-            exit(0);
+            for (auto fd : writeable)
+                readOrWrite(fd, RESPONSE_TEXT, write);
         }
-        else
-        {
-            pv.push_back(pid);
-        }
-    }
-
-    Int2IntMap pending_write_msgs;
-    for (int i = 0; i < workers_num; ++i)
-        pending_write_msgs[i] = requests_num;
-    Int2IntMap pending_read_msgs = pending_write_msgs;
+    });
 
     auto start = std::chrono::steady_clock::now();
 
@@ -67,8 +57,7 @@ int main(int argc, char* argv[])
         }
     });
 
-    for (auto& pid : pv)
-        waitpid(pid, NULL, 0);
+    wk.join();
     mt.join();
 
     auto end = std::chrono::steady_clock::now();
