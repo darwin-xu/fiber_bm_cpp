@@ -19,6 +19,7 @@ add_executable(thread_test_mm select/thread_test_mm.cpp facility.cpp)
 add_executable(fork_test select/fork_test.cpp facility.cpp)
 add_executable(fiber_test select/fiber_test.cpp facility.cpp)
 add_executable(thread_test_opt select/thread_test_opt.cpp facility.cpp)
+add_executable(thread_test_k kevent/thread_test_k.cpp facility.cpp)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
