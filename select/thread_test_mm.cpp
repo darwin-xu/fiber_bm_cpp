@@ -1,5 +1,5 @@
-#include "facility.hpp"
-#include "separated.hpp"
+#include "../facility.hpp"
+#include "../separated.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -38,25 +38,22 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
-    std::thread mt([workers_num, requests_num, &master_read, &master_write]() {
-        auto pendingItems = workers_num * requests_num;
-        while (pendingItems > 0)
-        {
-            auto [readable, writeable] = sselect(master_read, master_write);
-
-            for (auto fd : readable)
-                readOrWrite(fd, RESPONSE_TEXT, read);
-            for (auto fd : writeable)
+    ThreadVector masters;
+    for (int i = 0; i < workers_num; ++i)
+    {
+        masters.emplace_back([i, requests_num, &master_read, &master_write]() {
+            for (int n = 0; n < requests_num; ++n)
             {
-                readOrWrite(fd, QUERY_TEXT, write);
-                --pendingItems;
+                readOrWrite(master_write[i], QUERY_TEXT, write);
+                readOrWrite(master_read[i], RESPONSE_TEXT, read);
             }
-        }
-    });
+        });
+    }
 
     for (auto& w : workers)
         w.join();
-    mt.join();
+    for (auto& m : masters)
+        m.join();
 
     auto end = std::chrono::steady_clock::now();
 

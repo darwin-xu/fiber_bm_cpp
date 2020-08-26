@@ -44,6 +44,13 @@ std::pair<IntVector, IntVector> sselect(const IntVector& rds, const IntVector& w
     return std::make_pair(getFD_SET(rds, rdSet), getFD_SET(wts, wtSet));
 }
 
+template<class T>
+T kkevent()
+{
+    T t;
+    return t;
+}
+
 void printStat(const TP& start, const TP& end, double workload)
 {
     auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();

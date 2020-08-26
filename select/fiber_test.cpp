@@ -1,7 +1,7 @@
 #include <boost/fiber/all.hpp>
 
-#include "facility.hpp"
-#include "separated.hpp"
+#include "../facility.hpp"
+#include "../separated.hpp"
 
 class Flag;
 

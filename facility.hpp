@@ -41,6 +41,9 @@ void readOrWrite(int fd, std::string& str, Function&& f)
 
 std::pair<IntVector, IntVector> sselect(const IntVector& rds, const IntVector& wts);
 
+template<class T>
+T kkevent();
+
 using TP = decltype(std::chrono::steady_clock::now());
 
 void printStat(const TP& start, const TP& end, double workload);
