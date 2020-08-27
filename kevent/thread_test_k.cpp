@@ -2,21 +2,21 @@
 #include "../separated.hpp"
 #include "../Kq.hpp"
 
-class Fd
+class FdObj
 {
 public:
-    Fd(const Fd&) = delete;
+    FdObj(const FdObj&) = delete;
 
-    Fd& operator=(const Fd&) = delete;
+    FdObj& operator=(const FdObj&) = delete;
 
-    Fd(const Fd&& o)
+    FdObj(const FdObj&& o)
         : _fd(o._fd)
         , _count(o._count)
         , _read(o._read)
     {
     }
 
-    Fd& operator=(const Fd&& r)
+    FdObj& operator=(const FdObj&& r)
     {
         _fd    = r._fd;
         _count = r._count;
@@ -24,7 +24,7 @@ public:
         return *this;
     }
 
-    Fd(int fd, int count, bool read)
+    FdObj(int fd, int count, bool read)
         : _fd(fd)
         , _count(count)
         , _read(read)
@@ -52,11 +52,11 @@ private:
     bool _read;
 };
 
-using FdVector = std::vector<Fd>;
+using FdVector = std::vector<FdObj>;
 
 int main(int argc, char* argv[])
 {
-    Kq<Fd> kq;
+    Kq<FdObj> kq;
 
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
@@ -69,6 +69,8 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
+    // NOTE:
+    // Don't ever try to use the items in the vector while we still pushing!!!
     for (int i = 0; i < workers_num; ++i)
     {
         int p1[2], p2[2];
@@ -79,37 +81,47 @@ int main(int argc, char* argv[])
         master_write.emplace_back(p1[1], requests_num, false);
         master_read.emplace_back(p2[0], requests_num, true);
         worker_write.emplace_back(p2[1], requests_num, false);
+    }
 
+    for (int i = 0; i < workers_num; ++i)
+    {
         kq.regRead(master_read[i]);
         kq.regWrite(master_write[i]);
 
         workers.emplace_back(
-            [requests_num](Fd& fdRead, Fd& fdWrite) {
+            [requests_num](FdObj& fdoRead, FdObj& fdoWrite) {
                 for (int n = 0; n < requests_num; ++n)
                 {
-                    readOrWrite(fdRead.getFd(), QUERY_TEXT, read);
-                    readOrWrite(fdWrite.getFd(), RESPONSE_TEXT, write);
+                    readOrWrite(fdoRead.getFd(), QUERY_TEXT, read);
+                    readOrWrite(fdoWrite.getFd(), RESPONSE_TEXT, write);
                 }
             },
             std::ref(worker_read[i]),
             std::ref(worker_write[i]));
     }
 
-    std::thread master([&kq]() {
+    std::thread master([&kq, &master_write]() {
         while (true)
         {
-            auto fds = kq.wait();
-            if (fds.empty())
+            if (std::find_if(master_write.begin(), master_write.end(), [](FdObj& fdo) -> bool {
+                    return fdo.getCount() != 0;
+                }) == master_write.end())
                 break;
-            for (auto fd : fds)
+
+            auto fdos = kq.wait();
+            for (auto fdo : fdos)
             {
-                if (fd->isRead())
-                    readOrWrite(fd->getFd(), RESPONSE_TEXT, read);
+                if (fdo->isRead())
+                {
+                    readOrWrite(fdo->getFd(), RESPONSE_TEXT, read);
+                }
                 else
                 {
-                    readOrWrite(fd->getFd(), QUERY_TEXT, write);
-                    if (--fd->getCount() == 0)
-                        kq.unreg(*fd);
+                    readOrWrite(fdo->getFd(), QUERY_TEXT, write);
+                    if (--fdo->getCount() == 0)
+                    {
+                        kq.unreg(*fdo);
+                    }
                 }
             }
         }

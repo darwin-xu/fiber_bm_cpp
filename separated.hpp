@@ -1,6 +1,6 @@
 #include <iomanip>
 #include <locale>
-#include <iostream>
+#include <string>
 
 struct separated : std::numpunct<char>
 {

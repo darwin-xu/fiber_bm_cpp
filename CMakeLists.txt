@@ -13,6 +13,12 @@ link_libraries(boost_context)
 link_libraries(pthread)
 link_libraries(boost_fiber)
 
+if (APPLE)
+    add_definitions(-DMACOS)
+else (LINUX)
+    add_definitions(-DLINUX)
+endif()
+
 add_executable(pipeline_test pipeline_test.cpp facility.cpp)
 add_executable(thread_test select/thread_test.cpp facility.cpp)
 add_executable(thread_test_mm select/thread_test_mm.cpp facility.cpp)

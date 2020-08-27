@@ -4,6 +4,8 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <algorithm>
+#include <iostream>
 
 #include <string.h>
 #include <assert.h>
