@@ -7,7 +7,7 @@ using FdVector = std::vector<FdObj>;
 
 int main(int argc, char* argv[])
 {
-    Kq<FdObj> kq;
+    Kq<FdObj> kqMaster;
 
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
@@ -36,22 +36,39 @@ int main(int argc, char* argv[])
 
     for (int i = 0; i < workers_num; ++i)
     {
-        kq.regRead(master_read[i]);
-        kq.regWrite(master_write[i]);
+        kqMaster.regRead(master_read[i]);
+        kqMaster.regWrite(master_write[i]);
 
         workers.emplace_back(
             [requests_num](FdObj& fdoRead, FdObj& fdoWrite) {
-                for (int n = 0; n < requests_num; ++n)
+                Kq<FdObj> kq;
+                kq.regRead(fdoRead);
+                kq.regWrite(fdoWrite);
+
+                while (true)
                 {
-                    readOrWrite(fdoRead.getFd(), QUERY_TEXT, read);
-                    readOrWrite(fdoWrite.getFd(), RESPONSE_TEXT, write);
+                    if (fdoRead.getCount() == 0)
+                        break;
+                    auto fdos = kq.wait();
+                    for (auto fdo : fdos)
+                    {
+                        if (fdo->isRead())
+                        {
+                            readOrWrite(fdo->getFd(), QUERY_TEXT, read);
+                            --fdo->getCount();
+                        }
+                        else
+                        {
+                            readOrWrite(fdo->getFd(), RESPONSE_TEXT, write);
+                        }
+                    }
                 }
             },
             std::ref(worker_read[i]),
             std::ref(worker_write[i]));
     }
 
-    std::thread master([&kq, &master_write]() {
+    std::thread master([&kqMaster, &master_write]() {
         while (true)
         {
             if (std::find_if(master_write.begin(), master_write.end(), [](FdObj& fdo) -> bool {
@@ -59,7 +76,7 @@ int main(int argc, char* argv[])
                 }) == master_write.end())
                 break;
 
-            auto fdos = kq.wait();
+            auto fdos = kqMaster.wait();
             for (auto fdo : fdos)
             {
                 if (fdo->isRead())
@@ -71,7 +88,7 @@ int main(int argc, char* argv[])
                     readOrWrite(fdo->getFd(), QUERY_TEXT, write);
                     if (--fdo->getCount() == 0)
                     {
-                        kq.unreg(*fdo);
+                        kqMaster.unreg(*fdo);
                     }
                 }
             }
