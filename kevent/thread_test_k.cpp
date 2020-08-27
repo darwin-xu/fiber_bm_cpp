@@ -3,8 +3,6 @@
 #include "../Kq.hpp"
 #include "FdObj.hpp"
 
-using FdVector = std::vector<FdObj>;
-
 int main(int argc, char* argv[])
 {
     Kq<FdObj> kq;

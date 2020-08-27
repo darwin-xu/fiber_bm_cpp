@@ -27,6 +27,7 @@ add_executable(fiber_test select/fiber_test.cpp facility.cpp)
 add_executable(thread_test_opt select/thread_test_opt.cpp facility.cpp)
 add_executable(thread_test_k kevent/thread_test_k.cpp facility.cpp kevent/FdObj.cpp)
 add_executable(thread_test_k_opt kevent/thread_test_k_opt.cpp facility.cpp kevent/FdObj.cpp)
+add_executable(single_test kevent/single_test.cpp facility.cpp kevent/FdObj.cpp)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

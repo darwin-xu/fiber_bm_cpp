@@ -6,18 +6,16 @@
 int main(int argc, char* argv[])
 {
     Kq<FdObj> kqMaster;
+    Kq<FdObj> kqWorker;
 
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
-    FdVector     worker_read;
-    FdVector     worker_write;
-    FdVector     master_read;
-    FdVector     master_write;
-    ThreadVector workers;
+    FdVector worker_read;
+    FdVector worker_write;
+    FdVector master_read;
+    FdVector master_write;
 
-    // NOTE:
-    // Don't ever try to use the items in the vector while it still increasing!
     for (int i = 0; i < workers_num; ++i)
     {
         int p1[2], p2[2];
@@ -30,41 +28,15 @@ int main(int argc, char* argv[])
         worker_write.emplace_back(p2[1], requests_num, false);
     }
 
-    auto start = std::chrono::steady_clock::now();
-
     for (int i = 0; i < workers_num; ++i)
     {
         kqMaster.regRead(master_read[i]);
         kqMaster.regWrite(master_write[i]);
-
-        workers.emplace_back(
-            [requests_num](FdObj& fdoRead, FdObj& fdoWrite) {
-                Kq<FdObj> kq;
-                kq.regRead(fdoRead);
-                kq.regWrite(fdoWrite);
-
-                while (true)
-                {
-                    if (fdoRead.getCount() == 0)
-                        break;
-                    auto fdos = kq.wait();
-                    for (auto fdo : fdos)
-                    {
-                        if (fdo->isRead())
-                        {
-                            readOrWrite(fdo->getFd(), QUERY_TEXT, read);
-                            --fdo->getCount();
-                        }
-                        else
-                        {
-                            readOrWrite(fdo->getFd(), RESPONSE_TEXT, write);
-                        }
-                    }
-                }
-            },
-            std::ref(worker_read[i]),
-            std::ref(worker_write[i]));
+        kqWorker.regRead(worker_read[i]);
+        kqWorker.regWrite(worker_write[i]);
     }
+
+    auto start = std::chrono::steady_clock::now();
 
     std::thread master([&kqMaster, &master_write]() {
         while (true)
@@ -93,8 +65,32 @@ int main(int argc, char* argv[])
         }
     });
 
-    for (auto& w : workers)
-        w.join();
+    // main thread as worker
+    while (true)
+    {
+        if (std::find_if(worker_read.begin(), worker_read.end(), [](FdObj& fdo) -> bool {
+                return fdo.getCount() != 0;
+            }) == worker_read.end())
+            break;
+
+        auto fdos = kqWorker.wait();
+        for (auto fdo : fdos)
+        {
+            if (fdo->isRead())
+            {
+                readOrWrite(fdo->getFd(), QUERY_TEXT, read);
+                if (--fdo->getCount() == 0)
+                {
+                    kqWorker.unreg(*fdo);
+                }
+            }
+            else
+            {
+                readOrWrite(fdo->getFd(), RESPONSE_TEXT, write);
+            }
+        }
+    }
+
     master.join();
 
     auto end = std::chrono::steady_clock::now();

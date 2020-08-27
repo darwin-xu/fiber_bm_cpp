@@ -1,4 +1,3 @@
-#include <set>
 #include <vector>
 
 #ifdef MACOS
@@ -14,7 +13,6 @@ template<class T>
 class Kq
 {
 public:
-    using TSet    = std::set<const T*>;
     using TVector = std::vector<T*>;
 
     void regRead(T& t)
@@ -39,10 +37,9 @@ public:
 
     void unreg(T& t)
     {
-        _tset.erase(&t);
 #ifdef MACOS
         struct kevent event;
-        EV_SET(&event, t.getFd(), EVFILT_READ | EVFILT_WRITE, EV_DELETE, 0, 0, &t);
+        EV_SET(&event, t.getFd(), t.isRead() ? EVFILT_READ : EVFILT_WRITE, EV_DELETE, 0, 0, &t);
         assert(kevent(_kq, &event, 1, NULL, 0, NULL) != -1);
 #endif
 #ifdef LINUX
@@ -55,35 +52,31 @@ public:
 
     TVector wait()
     {
-        TVector tv;
-        if (!_tset.empty())
-        {
-            constexpr int EVENT_SIZE = 1024;
+        TVector       tv;
+        constexpr int EVENT_SIZE = 1024;
 #ifdef MACOS
-            struct kevent events[EVENT_SIZE];
-            auto          e = kevent(_kq, NULL, 0, events, EVENT_SIZE, NULL);
-            assert(e != -1);
-            for (int i; i < e; ++i)
-                tv.push_back(reinterpret_cast<T*>(events[i].udata));
+        struct kevent events[EVENT_SIZE];
+        auto          e = kevent(_kq, NULL, 0, events, EVENT_SIZE, NULL);
+        assert(e != -1);
+        for (int i = 0; i < e; ++i)
+            tv.push_back(reinterpret_cast<T*>(events[i].udata));
 #endif
 #ifdef LINUX
-            struct epoll_event events[EVENT_SIZE];
-            auto               e = epoll_wait(_ep, events, EVENT_SIZE, -1);
-            assert(e != -1);
-            for (int i = 0; i < e; ++i)
-                tv.push_back(reinterpret_cast<T*>(events[i].data.ptr));
+        struct epoll_event events[EVENT_SIZE];
+        auto               e = epoll_wait(_ep, events, EVENT_SIZE, -1);
+        assert(e != -1);
+        for (int i = 0; i < e; ++i)
+            tv.push_back(reinterpret_cast<T*>(events[i].data.ptr));
 #endif
-        }
         return tv;
     }
 
 private:
     void reg(T& t, int filter)
     {
-        _tset.insert(&t);
 #ifdef MACOS
         struct kevent event;
-        EV_SET(&event, t.getFd(), EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, &t);
+        EV_SET(&event, t.getFd(), filter, EV_ADD | EV_CLEAR, 0, 0, &t);
         assert(kevent(_kq, &event, 1, NULL, 0, NULL) != -1);
 #endif
 #ifdef LINUX
@@ -94,7 +87,6 @@ private:
 #endif
     }
 
-    TSet _tset;
 #ifdef MACOS
     int _kq = kqueue();
 #endif

@@ -1,3 +1,5 @@
+#include <vector>
+
 class FdObj
 {
 public:
@@ -22,3 +24,5 @@ private:
     int  _count;
     bool _read;
 };
+
+using FdVector = std::vector<FdObj>;
