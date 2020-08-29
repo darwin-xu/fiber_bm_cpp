@@ -1,3 +1,6 @@
+#ifndef KQ_H
+#define KQ_H
+
 #include <vector>
 
 #ifdef MACOS
@@ -94,3 +97,5 @@ private:
     int _ep = epoll_create(1);
 #endif
 };
+
+#endif // KQ_H

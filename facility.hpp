@@ -1,3 +1,6 @@
+#ifndef FACILITY_H
+#define FACILITY_H
+
 #include <vector>
 #include <thread>
 #include <string>
@@ -6,6 +9,7 @@
 #include <memory>
 #include <algorithm>
 #include <iostream>
+#include <tuple>
 
 #include <string.h>
 #include <assert.h>
@@ -15,6 +19,8 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
+
+#include "FdObj.hpp"
 
 using IntVector    = std::vector<int>;
 using ThreadVector = std::vector<std::thread>;
@@ -46,3 +52,9 @@ std::pair<IntVector, IntVector> sselect(const IntVector& rds, const IntVector& w
 using TP = decltype(std::chrono::steady_clock::now());
 
 void printStat(const TP& start, const TP& end, double workload);
+
+std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(int workers_number);
+
+std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number, int requests_number);
+
+#endif // FACILITY_H

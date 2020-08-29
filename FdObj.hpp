@@ -1,3 +1,6 @@
+#ifndef FDOBJ
+#define FDOBJ
+
 #include <vector>
 
 class FdObj
@@ -26,3 +29,5 @@ private:
 };
 
 using FdVector = std::vector<FdObj>;
+
+#endif // FDOBJ

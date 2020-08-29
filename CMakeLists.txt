@@ -16,7 +16,7 @@ else (LINUX)
     add_definitions(-DLINUX)
 endif()
 
-add_library(fiber_bm facility.cpp kevent/FdObj.cpp)
+add_library(fiber_bm facility.cpp FdObj.cpp)
 
 add_executable(pipeline_test        pipeline_test.cpp)
 add_executable(thread_test          select/thread_test.cpp)

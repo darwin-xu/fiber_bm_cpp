@@ -1,7 +1,7 @@
 #include "../facility.hpp"
 #include "../separated.hpp"
 #include "../Kq.hpp"
-#include "FdObj.hpp"
+#include "../FdObj.hpp"
 
 int main(int argc, char* argv[])
 {

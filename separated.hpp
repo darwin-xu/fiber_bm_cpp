@@ -1,3 +1,6 @@
+#ifndef SEPARATED_H
+#define SEPARATED_H
+
 #include <iomanip>
 #include <locale>
 #include <string>
@@ -9,3 +12,5 @@ struct separated : std::numpunct<char>
         return "\03";
     }
 };
+
+#endif // SEPARATED_H

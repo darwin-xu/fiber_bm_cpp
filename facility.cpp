@@ -61,3 +61,48 @@ void printStat(const TP& start, const TP& end, double workload)
     std::cout << "items per second: " << std::fixed << std::setprecision(0) << workload * 1000 / elapsed_ms
               << std::endl;
 }
+
+std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(int workers_number)
+{
+    IntVector worker_read;
+    IntVector worker_write;
+    IntVector master_read;
+    IntVector master_write;
+
+    for (int i = 0; i < workers_number; ++i)
+    {
+        int fildes[2];
+
+        assert(pipe(fildes) == 0);
+        worker_read.push_back(fildes[0]);
+        master_write.push_back(fildes[1]);
+
+        assert(pipe(fildes) == 0);
+        master_read.push_back(fildes[0]);
+        worker_write.push_back(fildes[1]);
+    }
+
+    return std::make_tuple(worker_read, worker_write, master_read, master_write);
+}
+
+std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number, int requests_number)
+{
+    FdVector worker_read;
+    FdVector worker_write;
+    FdVector master_read;
+    FdVector master_write;
+
+    for (int i = 0; i < workers_number; ++i)
+    {
+        int p1[2], p2[2];
+        assert(pipe(p1) == 0);
+        assert(pipe(p2) == 0);
+
+        worker_read.emplace_back(p1[0], requests_number, true);
+        master_write.emplace_back(p1[1], requests_number, false);
+        master_read.emplace_back(p2[0], requests_number, true);
+        worker_write.emplace_back(p2[1], requests_number, false);
+    }
+
+    return std::make_tuple(worker_read, worker_write, master_read, master_write);
+}

@@ -6,29 +6,13 @@ int main(int argc, char* argv[])
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
-    IntVector worker_read;
-    IntVector worker_write;
-    IntVector master_read;
-    IntVector master_write;
+    auto [worker_read, worker_write, master_read, master_write] = initPipes1(workers_num);
 
-    for (int i = 0; i < workers_num; ++i)
-    {
-        int fildes[2];
-
-        assert(pipe(fildes) == 0);
-        worker_read.push_back(fildes[0]);
-        master_write.push_back(fildes[1]);
-
-        assert(pipe(fildes) == 0);
-        master_read.push_back(fildes[0]);
-        worker_write.push_back(fildes[1]);
-    }
-
-    std::thread wk([workers_num, requests_num, &worker_read, &worker_write]() {
+    std::thread wk([workers_num, requests_num, wrd = worker_read, wrt = worker_write]() {
         auto pendingItems = workers_num * requests_num;
         while (pendingItems > 0)
         {
-            auto [readable, writeable] = sselect(worker_read, worker_write);
+            auto [readable, writeable] = sselect(wrd, wrt);
             for (auto fd : readable)
             {
                 readOrWrite(fd, QUERY_TEXT, read);
@@ -41,11 +25,11 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
-    std::thread mt([workers_num, requests_num, &master_read, &master_write]() {
+    std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write]() {
         auto pendingItems = workers_num * requests_num;
         while (pendingItems > 0)
         {
-            auto [readable, writeable] = sselect(master_read, master_write);
+            auto [readable, writeable] = sselect(mrd, mwt);
 
             for (auto fd : readable)
                 readOrWrite(fd, RESPONSE_TEXT, read);
