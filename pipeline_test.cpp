@@ -6,10 +6,12 @@ int main(int argc, char* argv[])
 {
     auto requests_num = std::stoi(argv[1]);
 
-    int fildes1[2];
-    assert(pipe(fildes1) == 0);
-    int fildes2[2];
-    assert(pipe(fildes2) == 0);
+    int  fildes1[2];
+    auto r1 = pipe(fildes1);
+    assert(r1 == 0);
+    int  fildes2[2];
+    auto r2 = pipe(fildes2);
+    assert(r2 == 0);
 
     auto start = std::chrono::steady_clock::now();
 

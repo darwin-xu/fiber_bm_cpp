@@ -45,13 +45,15 @@ public:
 #ifdef MACOS
         struct kevent event;
         EV_SET(&event, t.getFd(), t.isRead() ? EVFILT_READ : EVFILT_WRITE, EV_DELETE, 0, 0, &t);
-        assert(kevent(_kq, &event, 1, NULL, 0, NULL) != -1);
+        auto r = kevent(_kq, &event, 1, NULL, 0, NULL);
+        assert(r != -1);
 #endif
 #ifdef LINUX
         struct epoll_event event;
         event.events   = EPOLLIN | EPOLLOUT;
         event.data.ptr = &t;
-        assert(epoll_ctl(_ep, EPOLL_CTL_DEL, t.getFd(), &event) != -1);
+        auto r         = epoll_ctl(_ep, EPOLL_CTL_DEL, t.getFd(), &event);
+        assert(r != -1);
 #endif
     }
 
@@ -86,13 +88,15 @@ private:
 #ifdef MACOS
         struct kevent event;
         EV_SET(&event, t.getFd(), filter, EV_ADD | EV_CLEAR, 0, 0, &t);
-        assert(kevent(_kq, &event, 1, NULL, 0, NULL) != -1);
+        auto r = kevent(_kq, &event, 1, NULL, 0, NULL);
+        assert(r != -1);
 #endif
 #ifdef LINUX
         struct epoll_event event;
         event.events   = filter;
         event.data.ptr = &t;
-        assert(epoll_ctl(_ep, EPOLL_CTL_ADD, t.getFd(), &event) != -1);
+        auto r         = epoll_ctl(_ep, EPOLL_CTL_ADD, t.getFd(), &event);
+        assert(r != -1);
 #endif
     }
 

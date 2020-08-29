@@ -35,7 +35,6 @@ void readOrWrite(int fd, std::string& str, Function&& f)
 {
     std::unique_ptr<char[]> temp = std::make_unique<char[]>(str.length());
     auto                    buf  = temp.get();
-
     memcpy(buf, str.c_str(), str.length());
     size_t remain = str.length();
     do

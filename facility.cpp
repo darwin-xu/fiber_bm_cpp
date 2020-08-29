@@ -29,7 +29,8 @@ std::pair<IntVector, IntVector> sselect(const IntVector& rds, const IntVector& w
     timeout.tv_sec  = 10;
     timeout.tv_usec = 1000;
 
-    assert(select(FD_SETSIZE, &rdSet, &wtSet, NULL, &timeout) != -1);
+    auto s = select(FD_SETSIZE, &rdSet, &wtSet, NULL, &timeout);
+    assert(s != -1);
 
     auto getFD_SET = [](const IntVector& fds, const fd_set& set) -> IntVector {
         IntVector retSet;
@@ -71,15 +72,17 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(int workers_nu
 
     for (int i = 0; i < workers_number; ++i)
     {
-        int fildes[2];
+        int  fildes1[2];
+        auto r1 = pipe(fildes1);
+        assert(r1 == 0);
+        worker_read.push_back(fildes1[0]);
+        master_write.push_back(fildes1[1]);
 
-        assert(pipe(fildes) == 0);
-        worker_read.push_back(fildes[0]);
-        master_write.push_back(fildes[1]);
-
-        assert(pipe(fildes) == 0);
-        master_read.push_back(fildes[0]);
-        worker_write.push_back(fildes[1]);
+        int  fildes2[2];
+        auto r2 = pipe(fildes2);
+        assert(r2 == 0);
+        master_read.push_back(fildes2[0]);
+        worker_write.push_back(fildes2[1]);
     }
 
     return std::make_tuple(worker_read, worker_write, master_read, master_write);
@@ -94,9 +97,11 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number
 
     for (int i = 0; i < workers_number; ++i)
     {
-        int p1[2], p2[2];
-        assert(pipe(p1) == 0);
-        assert(pipe(p2) == 0);
+        int  p1[2], p2[2];
+        auto r1 = pipe(p1);
+        assert(r1 == 0);
+        auto r2 = pipe(p2);
+        assert(r2 == 0);
 
         worker_read.emplace_back(p1[0], requests_number, true);
         master_write.emplace_back(p1[1], requests_number, false);
