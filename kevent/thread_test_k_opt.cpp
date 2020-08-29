@@ -10,28 +10,11 @@ int main(int argc, char* argv[])
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
-    FdVector     worker_read;
-    FdVector     worker_write;
-    FdVector     master_read;
-    FdVector     master_write;
-    ThreadVector workers;
-
-    // NOTE:
-    // Don't ever try to use the items in the vector while it still increasing!
-    for (int i = 0; i < workers_num; ++i)
-    {
-        int p1[2], p2[2];
-        assert(pipe(p1) == 0);
-        assert(pipe(p2) == 0);
-
-        worker_read.emplace_back(p1[0], requests_num, true);
-        master_write.emplace_back(p1[1], requests_num, false);
-        master_read.emplace_back(p2[0], requests_num, true);
-        worker_write.emplace_back(p2[1], requests_num, false);
-    }
+    auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num);
 
     auto start = std::chrono::steady_clock::now();
 
+    ThreadVector workers;
     for (int i = 0; i < workers_num; ++i)
     {
         kqMaster.regRead(master_read[i]);
@@ -66,12 +49,12 @@ int main(int argc, char* argv[])
             std::ref(worker_write[i]));
     }
 
-    std::thread master([&kqMaster, &master_write]() {
+    std::thread master([&kqMaster, &mwt = master_write]() {
         while (true)
         {
-            if (std::find_if(master_write.begin(), master_write.end(), [](FdObj& fdo) -> bool {
+            if (std::find_if(mwt.begin(), mwt.end(), [](FdObj& fdo) -> bool {
                     return fdo.getCount() != 0;
-                }) == master_write.end())
+                }) == mwt.end())
                 break;
 
             auto fdos = kqMaster.wait();

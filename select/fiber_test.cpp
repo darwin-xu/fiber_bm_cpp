@@ -42,23 +42,7 @@ int main(int argc, char* argv[])
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
-    IntVector worker_read;
-    IntVector worker_write;
-    IntVector master_read;
-    IntVector master_write;
-
-    for (int i = 0; i < workers_num; ++i)
-    {
-        int fildes[2];
-
-        assert(pipe(fildes) == 0);
-        worker_read.push_back(fildes[0]);
-        master_write.push_back(fildes[1]);
-
-        assert(pipe(fildes) == 0);
-        master_read.push_back(fildes[0]);
-        worker_write.push_back(fildes[1]);
-    }
+    auto [worker_read, worker_write, master_read, master_write] = initPipes1(workers_num);
 
     using FiberVector = std::vector<boost::fibers::fiber>;
     using FlagVector  = std::vector<Flag>;
@@ -74,19 +58,20 @@ int main(int argc, char* argv[])
 
     for (int i = 0; i < workers_num; ++i)
     {
-        fv.emplace_back([i, requests_num, &worker_read, &worker_write, &fvRead, &fvWrite, &ifmRead, &ifmWrite]() {
-            for (int n = 0; n < requests_num; ++n)
-            {
-                fvRead[i].wait(worker_read[i], ifmRead);
-                readOrWrite(worker_read[i], QUERY_TEXT, read);
+        fv.emplace_back(
+            [i, requests_num, wrd = worker_read, wwt = worker_write, &fvRead, &fvWrite, &ifmRead, &ifmWrite]() {
+                for (int n = 0; n < requests_num; ++n)
+                {
+                    fvRead[i].wait(wrd[i], ifmRead);
+                    readOrWrite(wrd[i], QUERY_TEXT, read);
 
-                fvWrite[i].wait(worker_write[i], ifmWrite);
-                readOrWrite(worker_write[i], RESPONSE_TEXT, write);
-            }
-        });
+                    fvWrite[i].wait(wwt[i], ifmWrite);
+                    readOrWrite(wwt[i], RESPONSE_TEXT, write);
+                }
+            });
     }
 
-    boost::fibers::fiber reactorFiber([&worker_read, &worker_write, &ifmRead, &ifmWrite]() {
+    boost::fibers::fiber reactorFiber([&ifmRead, &ifmWrite]() {
         while (true)
         {
             auto map2vector = [](const Int2FlagMap& ifm) {
@@ -112,11 +97,11 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
-    std::thread mt([workers_num, requests_num, &master_read, &master_write]() {
+    std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write]() {
         auto pendingItems = workers_num * requests_num;
         while (pendingItems > 0)
         {
-            auto [readable, writeable] = sselect(master_read, master_write);
+            auto [readable, writeable] = sselect(mrd, mwt);
 
             for (auto fd : readable)
                 readOrWrite(fd, RESPONSE_TEXT, read);
