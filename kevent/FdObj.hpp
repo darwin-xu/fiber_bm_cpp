@@ -9,9 +9,9 @@ public:
 
     FdObj& operator=(const FdObj&) = delete;
 
-    FdObj(const FdObj&& o);
+    FdObj(FdObj&&) = default;
 
-    FdObj& operator=(const FdObj&& r);
+    FdObj& operator=(FdObj&&) = default;
 
     int getFd() const;
 

@@ -7,21 +7,6 @@ FdObj::FdObj(int fd, int count, bool read)
 {
 }
 
-FdObj::FdObj(const FdObj&& o)
-    : _fd(o._fd)
-    , _count(o._count)
-    , _read(o._read)
-{
-}
-
-FdObj& FdObj::operator=(const FdObj&& r)
-{
-    _fd    = r._fd;
-    _count = r._count;
-    _read  = r._read;
-    return *this;
-}
-
 int FdObj::getFd() const
 {
     return _fd;

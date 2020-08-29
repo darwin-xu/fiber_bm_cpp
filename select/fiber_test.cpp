@@ -13,28 +13,28 @@ public:
     void wait(int fd, Int2FlagMap& ifm)
     {
         ifm[fd] = this;
-        std::unique_lock<boost::fibers::mutex> l(*m);
-        c->wait(
+        std::unique_lock<boost::fibers::mutex> l(*_m);
+        _c->wait(
             l,
-            [this]() -> auto { return f; });
-        f = false;
+            [this]() -> auto { return _f; });
+        _f = false;
     }
 
     void notify(int fd, Int2FlagMap& ifm)
     {
         ifm.erase(fd);
-        if (!f)
+        if (!_f)
         {
-            f = true;
-            c->notify_one();
+            _f = true;
+            _c->notify_one();
             boost::this_fiber::yield();
         }
     }
 
 private:
-    bool                                               f = false;
-    std::unique_ptr<boost::fibers::mutex>              m = std::make_unique<boost::fibers::mutex>();
-    std::unique_ptr<boost::fibers::condition_variable> c = std::make_unique<boost::fibers::condition_variable>();
+    bool                                               _f = false;
+    std::unique_ptr<boost::fibers::mutex>              _m = std::make_unique<boost::fibers::mutex>();
+    std::unique_ptr<boost::fibers::condition_variable> _c = std::make_unique<boost::fibers::condition_variable>();
 };
 
 int main(int argc, char* argv[])
