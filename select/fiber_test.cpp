@@ -126,33 +126,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
-int zmain(int argc, char* argv[])
-{
-    boost::fibers::mutex              mtx;
-    boost::fibers::condition_variable cond;
-
-    boost::fibers::fiber f2([&mtx, &cond]() {
-        for (int i = 0; i < 5; ++i)
-        {
-            cond.notify_one();
-            std::cout << "f2" << std::endl;
-            boost::this_fiber::yield();
-        }
-    });
-
-    boost::fibers::fiber f1([&mtx, &cond]() {
-        for (int i = 0; i < 5; ++i)
-        {
-            std::unique_lock<boost::fibers::mutex> lk(mtx);
-            std::cout << "f1 {" << std::endl;
-            cond.wait(lk);
-            std::cout << "f1 }" << std::endl;
-        }
-    });
-
-    f1.join();
-    f2.join();
-
-    return 0;
-}

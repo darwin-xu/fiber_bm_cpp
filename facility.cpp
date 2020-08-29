@@ -63,7 +63,7 @@ void printStat(const TP& start, const TP& end, double workload)
               << std::endl;
 }
 
-std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(int workers_number)
+std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(int workers_number, bool nonblock)
 {
     IntVector worker_read;
     IntVector worker_write;
@@ -72,23 +72,30 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(int workers_nu
 
     for (int i = 0; i < workers_number; ++i)
     {
-        int  fildes1[2];
-        auto r1 = pipe(fildes1);
+        int  p1[2], p2[2];
+        auto r1 = pipe(p1);
         assert(r1 == 0);
-        worker_read.push_back(fildes1[0]);
-        master_write.push_back(fildes1[1]);
-
-        int  fildes2[2];
-        auto r2 = pipe(fildes2);
+        auto r2 = pipe(p2);
         assert(r2 == 0);
-        master_read.push_back(fildes2[0]);
-        worker_write.push_back(fildes2[1]);
+
+        if (nonblock)
+        {
+            setNonblock(p1[0]);
+            setNonblock(p1[1]);
+            setNonblock(p2[0]);
+            setNonblock(p2[1]);
+        }
+
+        worker_read.push_back(p1[0]);
+        master_write.push_back(p1[1]);
+        master_read.push_back(p2[0]);
+        worker_write.push_back(p2[1]);
     }
 
     return std::make_tuple(worker_read, worker_write, master_read, master_write);
 }
 
-std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number, int requests_number)
+std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number, int requests_number, bool nonblock)
 {
     FdVector worker_read;
     FdVector worker_write;
@@ -103,6 +110,14 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number
         auto r2 = pipe(p2);
         assert(r2 == 0);
 
+        if (nonblock)
+        {
+            setNonblock(p1[0]);
+            setNonblock(p1[1]);
+            setNonblock(p2[0]);
+            setNonblock(p2[1]);
+        }
+
         worker_read.emplace_back(p1[0], requests_number, true);
         master_write.emplace_back(p1[1], requests_number, false);
         master_read.emplace_back(p2[0], requests_number, true);
@@ -113,4 +128,12 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number
                            std::move(worker_write),
                            std::move(master_read),
                            std::move(master_write));
+}
+
+void setNonblock(int fd)
+{
+    int flags = fcntl(fd, F_GETFL, 0);
+    assert(flags != -1);
+    int r = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    assert(r != -1);
 }
