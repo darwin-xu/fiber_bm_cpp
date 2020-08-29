@@ -104,5 +104,8 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number
         worker_write.emplace_back(p2[1], requests_number, false);
     }
 
-    return std::make_tuple(worker_read, worker_write, master_read, master_write);
+    return std::make_tuple(std::move(worker_read),
+                           std::move(worker_write),
+                           std::move(master_read),
+                           std::move(master_write));
 }

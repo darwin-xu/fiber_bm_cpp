@@ -2,6 +2,7 @@
 #define KQ_H
 
 #include <vector>
+#include <set>
 
 #ifdef MACOS
 #include <sys/types.h>
@@ -40,6 +41,7 @@ public:
 
     void unreg(T& t)
     {
+        fdSet.erase(t.getFd());
 #ifdef MACOS
         struct kevent event;
         EV_SET(&event, t.getFd(), t.isRead() ? EVFILT_READ : EVFILT_WRITE, EV_DELETE, 0, 0, &t);
@@ -57,26 +59,30 @@ public:
     {
         TVector       tv;
         constexpr int EVENT_SIZE = 1024;
+        if (!fdSet.empty())
+        {
 #ifdef MACOS
-        struct kevent events[EVENT_SIZE];
-        auto          e = kevent(_kq, NULL, 0, events, EVENT_SIZE, NULL);
-        assert(e != -1);
-        for (int i = 0; i < e; ++i)
-            tv.push_back(reinterpret_cast<T*>(events[i].udata));
+            struct kevent events[EVENT_SIZE];
+            auto          e = kevent(_kq, NULL, 0, events, EVENT_SIZE, NULL);
+            assert(e != -1);
+            for (int i = 0; i < e; ++i)
+                tv.push_back(reinterpret_cast<T*>(events[i].udata));
 #endif
 #ifdef LINUX
-        struct epoll_event events[EVENT_SIZE];
-        auto               e = epoll_wait(_ep, events, EVENT_SIZE, -1);
-        assert(e != -1);
-        for (int i = 0; i < e; ++i)
-            tv.push_back(reinterpret_cast<T*>(events[i].data.ptr));
+            struct epoll_event events[EVENT_SIZE];
+            auto               e = epoll_wait(_ep, events, EVENT_SIZE, -1);
+            assert(e != -1);
+            for (int i = 0; i < e; ++i)
+                tv.push_back(reinterpret_cast<T*>(events[i].data.ptr));
 #endif
+        }
         return tv;
     }
 
 private:
     void reg(T& t, int filter)
     {
+        fdSet.insert(t.getFd());
 #ifdef MACOS
         struct kevent event;
         EV_SET(&event, t.getFd(), filter, EV_ADD | EV_CLEAR, 0, 0, &t);
@@ -96,6 +102,7 @@ private:
 #ifdef LINUX
     int _ep = epoll_create(1);
 #endif
+    std::set<int> fdSet;
 };
 
 #endif // KQ_H
