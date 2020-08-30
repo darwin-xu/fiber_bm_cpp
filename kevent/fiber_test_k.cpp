@@ -32,12 +32,12 @@ int main(int argc, char* argv[])
                 for (int n = 0; n < requests_num; ++n)
                 {
                     kqWorker.regRead(fdoRead);
-                    fdoRead.wait();
+                    fdoRead.yield();
                     kqWorker.unreg(fdoRead);
                     readOrWrite(fdoRead.getFd(), QUERY_TEXT, read);
 
                     kqWorker.regWrite(fdoWrite);
-                    fdoWrite.wait();
+                    fdoWrite.yield();
                     kqWorker.unreg(fdoWrite);
                     readOrWrite(fdoWrite.getFd(), RESPONSE_TEXT, write);
                 }
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
             auto fdos = kqWorker.wait();
             for (auto fdo : fdos)
             {
-                fdo->notify();
+                fdo->resume();
                 boost::this_fiber::yield();
             }
         }

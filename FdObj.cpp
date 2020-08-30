@@ -22,12 +22,12 @@ bool FdObj::isRead() const
     return _read;
 }
 
-void FdObj::notify()
+void FdObj::resume()
 {
     _promise->set_value(0);
 }
 
-void FdObj::wait()
+void FdObj::yield()
 {
     _promise = std::make_unique<boost::fibers::promise<int>>();
     auto f   = _promise->get_future();

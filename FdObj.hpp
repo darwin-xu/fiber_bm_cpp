@@ -27,9 +27,9 @@ public:
 
     bool isRead() const;
 
-    void notify();
+    void resume();
 
-    void wait();
+    void yield();
 
 private:
     int     _fd;
