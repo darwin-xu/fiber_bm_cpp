@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
     for (int i = 0; i < workers_num; ++i)
     {
         // Using something like this will cause compile error:
-        // workers.emplace_back([i, requests_num, &worker_read, &worker_write]()
+        // workers.emplace_back([i, requests_num, &worker_read, &worker_write]
         // it is an issue of C++ std: http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#2313
         // https://stackoverflow.com/questions/46114214/lambda-implicit-capture-fails-with-variable-declared-from-structured-binding
         workers.emplace_back(
@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     auto start = std::chrono::steady_clock::now();
 
     // "Captureing with the initializer" is a workaround.
-    std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write]() {
+    std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write] {
         auto pendingItems = workers_num * requests_num;
         while (pendingItems > 0)
         {

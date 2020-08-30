@@ -16,7 +16,7 @@ public:
         std::unique_lock<boost::fibers::mutex> l(*m);
         c->wait(
             l,
-            [this]() -> auto { return f; });
+            [this] -> auto { return f; });
         f = false;
     }
 
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
     for (int i = 0; i < workers_num; ++i)
     {
         fv.emplace_back(
-            [i, requests_num, wrd = worker_read, wwt = worker_write, &fvRead, &fvWrite, &ifmRead, &ifmWrite]() {
+            [i, requests_num, wrd = worker_read, wwt = worker_write, &fvRead, &fvWrite, &ifmRead, &ifmWrite] {
                 for (int n = 0; n < requests_num; ++n)
                 {
                     fvRead[i].wait(wrd[i], ifmRead);
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
             });
     }
 
-    boost::fibers::fiber reactorFiber([&ifmRead, &ifmWrite]() {
+    boost::fibers::fiber reactorFiber([&ifmRead, &ifmWrite] {
         while (true)
         {
             auto map2vector = [](const Int2FlagMap& ifm) {
@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
-    std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write]() {
+    std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write] {
         auto pendingItems = workers_num * requests_num;
         while (pendingItems > 0)
         {

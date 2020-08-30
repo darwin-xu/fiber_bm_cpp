@@ -29,15 +29,17 @@ int main(int argc, char* argv[])
             [requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead, FdObj& fdoWrite) {
                 for (int n = 0; n < requests_num; ++n)
                 {
-                    kqWorker.regRead(fdoRead);
-                    fdoRead.wait();
-                    kqWorker.unreg(fdoRead);
-                    readOrWrite(fdoRead.getFd(), QUERY_TEXT, read);
+                    readOrWrite(fdoRead.getFd(), QUERY_TEXT, read, [&kqWorker, &fdoRead] {
+                        kqWorker.regRead(fdoRead);
+                        fdoRead.wait();
+                        kqWorker.unreg(fdoRead);
+                    });
 
-                    kqWorker.regWrite(fdoWrite);
-                    fdoWrite.wait();
-                    kqWorker.unreg(fdoWrite);
-                    readOrWrite(fdoWrite.getFd(), RESPONSE_TEXT, write);
+                    readOrWrite(fdoWrite.getFd(), RESPONSE_TEXT, write, [&kqWorker, &fdoWrite] {
+                        kqWorker.regWrite(fdoWrite);
+                        fdoWrite.wait();
+                        kqWorker.unreg(fdoWrite);
+                    });
                 }
                 --workers_cnt;
             },

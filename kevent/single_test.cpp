@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
-    std::thread master([&kqMaster, &mwt = master_write]() {
+    std::thread master([&kqMaster, &mwt = master_write] {
         while (true)
         {
             if (std::find_if(mwt.begin(), mwt.end(), [](FdObj& fdo) -> bool {

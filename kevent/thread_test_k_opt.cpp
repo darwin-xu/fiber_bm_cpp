@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
             std::ref(worker_write[i]));
     }
 
-    std::thread master([&kqMaster, &mwt = master_write]() {
+    std::thread master([&kqMaster, &mwt = master_write] {
         while (true)
         {
             if (std::find_if(mwt.begin(), mwt.end(), [](FdObj& fdo) -> bool {

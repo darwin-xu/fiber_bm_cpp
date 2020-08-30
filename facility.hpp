@@ -30,8 +30,13 @@ using Int2IntMap   = std::map<int, int>;
 extern std::string QUERY_TEXT;
 extern std::string RESPONSE_TEXT;
 
-template<class Function>
-void readOrWrite(int fd, std::string& str, Function&& f)
+template<class RWF, class YieldAt = void (*)(void)>
+void readOrWrite(
+    int          fd,
+    std::string& str,
+    RWF&&        rw,
+    YieldAt&&    yieldAt = [] {
+    })
 {
     std::unique_ptr<char[]> temp = std::make_unique<char[]>(str.length());
     auto                    buf  = temp.get();
@@ -39,10 +44,19 @@ void readOrWrite(int fd, std::string& str, Function&& f)
     size_t remain = str.length();
     do
     {
-        int r = f(fd, buf, remain);
-        assert(r >= 0);
-        buf += r;
-        remain -= r;
+        int r = rw(fd, buf, remain);
+        if (r != -1)
+        {
+            buf += r;
+            remain -= r;
+        }
+        else
+        {
+            if (errno == EAGAIN)
+                yieldAt();
+            else
+                assert(false);
+        }
     } while (remain != 0);
 }
 

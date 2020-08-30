@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
-    std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write]() {
+    std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write] {
         auto pendingItems = workers_num * requests_num;
         while (pendingItems > 0)
         {
