@@ -5,6 +5,8 @@
 
 int main(int argc, char* argv[])
 {
+    auto start = std::chrono::steady_clock::now();
+
     Kq<FdObj> kqMaster;
     Kq<FdObj> kqWorker;
 
@@ -20,8 +22,6 @@ int main(int argc, char* argv[])
         kqWorker.regRead(worker_read[i]);
         kqWorker.regWrite(worker_write[i]);
     }
-
-    auto start = std::chrono::steady_clock::now();
 
     std::thread master([&kqMaster, &mwt = master_write] {
         while (true)
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
         }
     });
 
-    // main thread as worker
+    // Main thread as the worker
     while (true)
     {
         if (std::find_if(worker_read.begin(), worker_read.end(), [](FdObj& fdo) -> bool {

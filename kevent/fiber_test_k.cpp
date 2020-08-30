@@ -9,6 +9,8 @@ using FiberVector = std::vector<boost::fibers::fiber>;
 
 int main(int argc, char* argv[])
 {
+    auto start = std::chrono::steady_clock::now();
+
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
@@ -56,8 +58,6 @@ int main(int argc, char* argv[])
             }
         }
     });
-
-    auto start = std::chrono::steady_clock::now();
 
     std::thread master([&kqMaster, &mrd = master_read, &mwt = master_write] {
         while (true)

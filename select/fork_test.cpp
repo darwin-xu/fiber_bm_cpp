@@ -3,6 +3,8 @@
 
 int main(int argc, char* argv[])
 {
+    auto start = std::chrono::steady_clock::now();
+
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
@@ -32,8 +34,6 @@ int main(int argc, char* argv[])
     for (int i = 0; i < workers_num; ++i)
         pending_write_msgs[i] = requests_num;
     Int2IntMap pending_read_msgs = pending_write_msgs;
-
-    auto start = std::chrono::steady_clock::now();
 
     std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write] {
         auto pendingItems = workers_num * requests_num;

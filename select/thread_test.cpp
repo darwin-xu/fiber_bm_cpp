@@ -3,6 +3,8 @@
 
 int main(int argc, char* argv[])
 {
+    auto start = std::chrono::steady_clock::now();
+
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
@@ -26,8 +28,6 @@ int main(int argc, char* argv[])
             worker_read[i],
             worker_write[i]);
     }
-
-    auto start = std::chrono::steady_clock::now();
 
     // "Captureing with the initializer" is a workaround.
     std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write] {

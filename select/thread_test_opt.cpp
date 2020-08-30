@@ -3,6 +3,8 @@
 
 int main(int argc, char* argv[])
 {
+    auto start = std::chrono::steady_clock::now();
+
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
@@ -22,8 +24,6 @@ int main(int argc, char* argv[])
                 readOrWrite(fd, RESPONSE_TEXT, write);
         }
     });
-
-    auto start = std::chrono::steady_clock::now();
 
     std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write] {
         auto pendingItems = workers_num * requests_num;

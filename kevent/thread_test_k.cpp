@@ -5,14 +5,14 @@
 
 int main(int argc, char* argv[])
 {
-    Kq<FdObj> kq;
+    auto start = std::chrono::steady_clock::now();
 
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
     auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num);
 
-    auto start = std::chrono::steady_clock::now();
+    Kq<FdObj> kq;
 
     ThreadVector workers;
     for (int i = 0; i < workers_num; ++i)
