@@ -16,7 +16,7 @@ public:
         std::unique_lock<boost::fibers::mutex> l(*m);
         c->wait(
             l,
-            [this] -> auto { return f; });
+            [this]() -> auto { return f; });
         f = false;
     }
 
