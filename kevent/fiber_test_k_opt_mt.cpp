@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     ThreadVector fiberThreads;
     for (int t = 0; t < threads_num; ++t)
     {
-        fiberThreads.emplace_back([workers_num, requests_num] {
+        fiberThreads.emplace_back([t, workers_num, requests_num] {
             auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num, true);
 
             Kq<FdObj> kqWorker;
@@ -89,6 +89,13 @@ int main(int argc, char* argv[])
                 f.join();
             reactorFiber.join();
             master.join();
+
+#ifndef NDEBUG
+            std::locale our_local(std::cout.getloc(), new separated);
+            std::cout.imbue(our_local);
+            std::cout << "[" << std::setw(2) << t << "]: kqWorker.wait = " << std::setw(9) << kqWorker.getWaitCount()
+                      << " kqMaster.wait = " << std::setw(9) << kqMaster.getWaitCount() << std::endl;
+#endif
         });
     }
 

@@ -113,8 +113,8 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number
         if (nonblock)
         {
             setNonblock(p1[0]);
-            setNonblock(p1[1]);
-            setNonblock(p2[0]);
+            //setNonblock(p1[1]);
+            //setNonblock(p2[0]);
             setNonblock(p2[1]);
         }
 

@@ -59,6 +59,10 @@ public:
 
     TVector wait()
     {
+#ifndef NDEBUG
+        ++_waitCount;
+#endif
+
         TVector       tv;
         constexpr int EVENT_SIZE = 1024;
         if (!fdSet.empty())
@@ -80,6 +84,13 @@ public:
         }
         return tv;
     }
+
+#ifndef NDEBUG
+    long getWaitCount()
+    {
+        return _waitCount;
+    }
+#endif
 
 private:
     void reg(T& t, int filter)
@@ -107,6 +118,10 @@ private:
     int _ep = epoll_create(1);
 #endif
     std::set<int> fdSet;
+
+#ifndef NDEBUG
+    long _waitCount = 0;
+#endif
 };
 
 #endif // KQ_H
