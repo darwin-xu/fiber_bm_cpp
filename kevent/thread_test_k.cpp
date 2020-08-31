@@ -40,8 +40,7 @@ int main(int argc, char* argv[])
                 }) == mwt.end())
                 break;
 
-            auto fdos = kq.wait();
-            for (auto fdo : fdos)
+            for (auto fdo : kq.wait())
             {
                 if (fdo->isRead())
                 {

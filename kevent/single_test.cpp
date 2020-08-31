@@ -31,8 +31,7 @@ int main(int argc, char* argv[])
                 }) == mwt.end())
                 break;
 
-            auto fdos = kqMaster.wait();
-            for (auto fdo : fdos)
+            for (auto fdo : kqMaster.wait())
             {
                 if (fdo->isRead())
                 {

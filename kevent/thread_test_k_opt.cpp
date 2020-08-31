@@ -30,8 +30,7 @@ int main(int argc, char* argv[])
                 {
                     if (fdoRead.getCount() == 0)
                         break;
-                    auto fdos = kq.wait();
-                    for (auto fdo : fdos)
+                    for (auto fdo : kq.wait())
                     {
                         if (fdo->isRead())
                         {
@@ -57,8 +56,7 @@ int main(int argc, char* argv[])
                 }) == mwt.end())
                 break;
 
-            auto fdos = kqMaster.wait();
-            for (auto fdo : fdos)
+            for (auto fdo : kqMaster.wait())
             {
                 if (fdo->isRead())
                 {

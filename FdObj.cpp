@@ -30,6 +30,5 @@ void FdObj::resume()
 void FdObj::yield()
 {
     _promise = std::make_unique<boost::fibers::promise<int>>();
-    auto f   = _promise->get_future();
-    f.get();
+    _promise->get_future().get();
 }

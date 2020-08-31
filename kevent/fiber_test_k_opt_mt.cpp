@@ -26,13 +26,13 @@ int main(int argc, char* argv[])
 
             auto workers_cnt = workers_num;
 
-            FiberVector fv;
+            FiberVector workerFibers;
             for (int i = 0; i < workers_num; ++i)
             {
                 kqMaster.regRead(master_read[i]);
                 kqMaster.regWrite(master_write[i]);
 
-                fv.emplace_back(
+                workerFibers.emplace_back(
                     [requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead, FdObj& fdoWrite) {
                         for (int n = 0; n < requests_num; ++n)
                         {
@@ -57,8 +57,7 @@ int main(int argc, char* argv[])
             boost::fibers::fiber reactorFiber([&workers_cnt, &kqWorker] {
                 while (workers_cnt != 0)
                 {
-                    auto fdos = kqWorker.wait();
-                    for (auto fdo : fdos)
+                    for (auto fdo : kqWorker.wait())
                     {
                         fdo->resume();
                         boost::this_fiber::yield();
@@ -85,7 +84,7 @@ int main(int argc, char* argv[])
                 }
             });
 
-            for (auto& f : fv)
+            for (auto& f : workerFibers)
                 f.join();
             reactorFiber.join();
             master.join();

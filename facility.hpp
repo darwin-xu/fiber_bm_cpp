@@ -74,4 +74,6 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int  workers_numbe
 
 void setNonblock(int fd);
 
+#define TF std::this_thread::get_id() << "_" << boost::this_fiber::get_id() << ":"
+
 #endif // FACILITY_H
