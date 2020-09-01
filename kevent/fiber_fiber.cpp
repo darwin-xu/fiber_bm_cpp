@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
     assert(requests_num % batch_num == 0);
 
     ThreadVector workerFiberThreads;
-    for (int t = 0; t < threads_num; ++t)
+    for (auto t = 0; t < threads_num; ++t)
     {
         workerFiberThreads.emplace_back([t, workers_num, requests_num, batch_num] {
             auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num, true);
@@ -61,22 +61,22 @@ int main(int argc, char* argv[])
                                 &kqMaster] {
                 auto        masters_cnt = workers_num;
                 FiberVector masterFibers;
-                for (int i = 0; i < workers_num; ++i)
+                for (auto i = 0; i < workers_num; ++i)
                 {
                     masterFibers.emplace_back(
                         [requests_num, batch_num, &masters_cnt, &kqMaster, &readOrYeild, &writeOrYeild](
                             FdObj& fdoRead,
                             FdObj& fdoWrite) {
-                            for (int n = 0; n < requests_num / batch_num; ++n)
+                            for (auto n = 0; n < requests_num / batch_num; ++n)
                             {
-                                for (int j = 0; j < batch_num; ++j)
+                                for (auto j = 0; j < batch_num; ++j)
                                 {
                                     readOrWrite(fdoWrite.getFd(),
                                                 QUERY_TEXT,
                                                 write,
                                                 std::bind(writeOrYeild, std::ref(kqMaster), std::ref(fdoWrite)));
                                 }
-                                for (int j = 0; j < batch_num; ++j)
+                                for (auto j = 0; j < batch_num; ++j)
                                 {
                                     readOrWrite(fdoRead.getFd(),
                                                 RESPONSE_TEXT,
@@ -99,12 +99,12 @@ int main(int argc, char* argv[])
 
             auto        workers_cnt = workers_num;
             FiberVector workerFibers;
-            for (int i = 0; i < workers_num; ++i)
+            for (auto i = 0; i < workers_num; ++i)
             {
                 workerFibers.emplace_back(
                     [requests_num, &workers_cnt, &kqWorker, &readOrYeild, &writeOrYeild](FdObj& fdoRead,
                                                                                          FdObj& fdoWrite) {
-                        for (int n = 0; n < requests_num; ++n)
+                        for (auto n = 0; n < requests_num; ++n)
                         {
                             readOrWrite(fdoRead.getFd(),
                                         QUERY_TEXT,

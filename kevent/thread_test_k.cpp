@@ -15,14 +15,14 @@ int main(int argc, char* argv[])
     Kq<FdObj> kq;
 
     ThreadVector workers;
-    for (int i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < workers_num; ++i)
     {
         kq.regRead(master_read[i]);
         kq.regWrite(master_write[i]);
 
         workers.emplace_back(
             [requests_num](FdObj& fdoRead, FdObj& fdoWrite) {
-                for (int n = 0; n < requests_num; ++n)
+                for (auto n = 0; n < requests_num; ++n)
                 {
                     readOrWrite(fdoRead.getFd(), QUERY_TEXT, read);
                     readOrWrite(fdoWrite.getFd(), RESPONSE_TEXT, write);

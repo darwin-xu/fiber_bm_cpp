@@ -11,13 +11,13 @@ int main(int argc, char* argv[])
     auto [worker_read, worker_write, master_read, master_write] = initPipes1(workers_num);
 
     PIDVector pv;
-    for (int i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < workers_num; ++i)
     {
         auto pid = fork();
         assert(pid >= 0);
         if (pid == 0)
         {
-            for (int n = 0; n < requests_num; ++n)
+            for (auto n = 0; n < requests_num; ++n)
             {
                 readOrWrite(worker_read[i], QUERY_TEXT, read);
                 readOrWrite(worker_write[i], RESPONSE_TEXT, write);
@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     }
 
     Int2IntMap pending_write_msgs;
-    for (int i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < workers_num; ++i)
         pending_write_msgs[i] = requests_num;
     Int2IntMap pending_read_msgs = pending_write_msgs;
 

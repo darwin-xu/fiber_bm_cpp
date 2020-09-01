@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
     Kq<FdObj> kqMaster;
 
     ThreadVector workers;
-    for (int i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < workers_num; ++i)
     {
         kqMaster.regRead(master_read[i]);
         kqMaster.regWrite(master_write[i]);

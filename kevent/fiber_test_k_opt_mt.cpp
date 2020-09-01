@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
     auto threads_num  = std::stoi(argv[3]);
 
     ThreadVector fiberThreads;
-    for (int t = 0; t < threads_num; ++t)
+    for (auto t = 0; t < threads_num; ++t)
     {
         fiberThreads.emplace_back([t, workers_num, requests_num] {
             auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num, true);
@@ -27,14 +27,14 @@ int main(int argc, char* argv[])
             auto workers_cnt = workers_num;
 
             FiberVector workerFibers;
-            for (int i = 0; i < workers_num; ++i)
+            for (auto i = 0; i < workers_num; ++i)
             {
                 kqMaster.regRead(master_read[i]);
                 kqMaster.regWrite(master_write[i]);
 
                 workerFibers.emplace_back(
                     [requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead, FdObj& fdoWrite) {
-                        for (int n = 0; n < requests_num; ++n)
+                        for (auto n = 0; n < requests_num; ++n)
                         {
                             readOrWrite(fdoRead.getFd(), QUERY_TEXT, read, [&kqWorker, &fdoRead] {
                                 kqWorker.regRead(fdoRead);

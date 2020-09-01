@@ -71,14 +71,14 @@ public:
             struct kevent events[EVENT_SIZE];
             auto          e = kevent(_kq, NULL, 0, events, EVENT_SIZE, NULL);
             assert(e != -1);
-            for (int i = 0; i < e; ++i)
+            for (auto i = 0; i < e; ++i)
                 tv.push_back(reinterpret_cast<T*>(events[i].udata));
 #endif
 #ifdef LINUX
             struct epoll_event events[EVENT_SIZE];
             auto               e = epoll_wait(_ep, events, EVENT_SIZE, -1);
             assert(e != -1);
-            for (int i = 0; i < e; ++i)
+            for (auto i = 0; i < e; ++i)
                 tv.push_back(reinterpret_cast<T*>(events[i].data.ptr));
 #endif
         }

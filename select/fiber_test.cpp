@@ -58,11 +58,11 @@ int main(int argc, char* argv[])
     fvRead.resize(workers_num);
     fvWrite.resize(workers_num);
 
-    for (int i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < workers_num; ++i)
     {
         fv.emplace_back(
             [i, requests_num, wrd = worker_read, wwt = worker_write, &fvRead, &fvWrite, &ifmRead, &ifmWrite] {
-                for (int n = 0; n < requests_num; ++n)
+                for (auto n = 0; n < requests_num; ++n)
                 {
                     fvRead[i].wait(wrd[i], ifmRead);
                     readOrWrite(wrd[i], QUERY_TEXT, read);

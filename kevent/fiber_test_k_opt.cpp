@@ -22,14 +22,14 @@ int main(int argc, char* argv[])
     auto workers_cnt = workers_num;
 
     FiberVector workerFibers;
-    for (int i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < workers_num; ++i)
     {
         kqMaster.regRead(master_read[i]);
         kqMaster.regWrite(master_write[i]);
 
         workerFibers.emplace_back(
             [requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead, FdObj& fdoWrite) {
-                for (int n = 0; n < requests_num; ++n)
+                for (auto n = 0; n < requests_num; ++n)
                 {
                     readOrWrite(fdoRead.getFd(), QUERY_TEXT, read, [&kqWorker, &fdoRead] {
                         kqWorker.regRead(fdoRead);

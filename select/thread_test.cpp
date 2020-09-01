@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
     auto [worker_read, worker_write, master_read, master_write] = initPipes1(workers_num);
 
     ThreadVector workers;
-    for (int i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < workers_num; ++i)
     {
         // Using something like this will cause compile error:
         // workers.emplace_back([i, requests_num, &worker_read, &worker_write]
@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
         // https://stackoverflow.com/questions/46114214/lambda-implicit-capture-fails-with-variable-declared-from-structured-binding
         workers.emplace_back(
             [i, requests_num](int rd, int wt) {
-                for (int n = 0; n < requests_num; ++n)
+                for (auto n = 0; n < requests_num; ++n)
                 {
                     readOrWrite(rd, QUERY_TEXT, read);
                     readOrWrite(wt, RESPONSE_TEXT, write);

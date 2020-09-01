@@ -70,7 +70,7 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(int workers_nu
     IntVector master_read;
     IntVector master_write;
 
-    for (int i = 0; i < workers_number; ++i)
+    for (auto i = 0; i < workers_number; ++i)
     {
         int  p1[2], p2[2];
         auto r1 = pipe(p1);
@@ -102,7 +102,7 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number
     FdVector master_read;
     FdVector master_write;
 
-    for (int i = 0; i < workers_number; ++i)
+    for (auto i = 0; i < workers_number; ++i)
     {
         int  p1[2], p2[2];
         auto r1 = pipe(p1);

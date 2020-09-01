@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 
     auto start = std::chrono::steady_clock::now();
 
-    for (int i = 0; i < requests_num; ++i)
+    for (auto i = 0; i < requests_num; ++i)
     {
         readOrWrite(fildes1[1], QUERY_TEXT, write);
         readOrWrite(fildes1[0], QUERY_TEXT, read);

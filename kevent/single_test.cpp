@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 
     auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num);
 
-    for (int i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < workers_num; ++i)
     {
         kqMaster.regRead(master_read[i]);
         kqMaster.regWrite(master_write[i]);
