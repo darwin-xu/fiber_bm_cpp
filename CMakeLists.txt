@@ -16,6 +16,8 @@ else (LINUX)
     add_definitions(-DLINUX)
 endif()
 
+add_compile_options(-Wall -Wextra -pedantic)
+
 add_library(fiber_bm facility.cpp FdObj.cpp)
 
 add_executable(pipeline_test        pipeline_test.cpp)

@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
         }
     });
 
-    std::thread master([&kqMaster, &mrd = master_read, &mwt = master_write] {
+    std::thread master([&kqMaster] {
         while (true)
         {
             auto fdos = kqMaster.wait();

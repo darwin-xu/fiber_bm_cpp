@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
     for (auto i = 0; i < workers_num; ++i)
     {
         workers.emplace_back(
-            [i, requests_num](int rd, int wt) {
+            [requests_num](int rd, int wt) {
                 for (auto n = 0; n < requests_num; ++n)
                 {
                     readOrWrite(rd, QUERY_TEXT, read);
@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     for (auto i = 0; i < workers_num; ++i)
     {
         masters.emplace_back(
-            [i, requests_num](int rd, int wt) {
+            [requests_num](int rd, int wt) {
                 for (auto n = 0; n < requests_num; ++n)
                 {
                     readOrWrite(wt, QUERY_TEXT, write);

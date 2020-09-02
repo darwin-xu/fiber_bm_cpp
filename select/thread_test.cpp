@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
         // it is an issue of C++ std: http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#2313
         // https://stackoverflow.com/questions/46114214/lambda-implicit-capture-fails-with-variable-declared-from-structured-binding
         workers.emplace_back(
-            [i, requests_num](int rd, int wt) {
+            [requests_num](int rd, int wt) {
                 for (auto n = 0; n < requests_num; ++n)
                 {
                     readOrWrite(rd, QUERY_TEXT, read);

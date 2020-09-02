@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
         kqMaster.regWrite(master_write[i]);
 
         workers.emplace_back(
-            [requests_num](FdObj& fdoRead, FdObj& fdoWrite) {
+            [](FdObj& fdoRead, FdObj& fdoWrite) {
                 Kq<FdObj> kq;
                 kq.regRead(fdoRead);
                 kq.regWrite(fdoWrite);
