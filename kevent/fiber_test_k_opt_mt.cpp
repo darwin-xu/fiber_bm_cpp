@@ -14,11 +14,12 @@ int main(int argc, char* argv[])
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
     auto threads_num  = std::stoi(argv[3]);
+    auto batch_num    = std::stoi(argv[4]);
 
     ThreadVector fiberThreads;
     for (auto t = 0; t < threads_num; ++t)
     {
-        fiberThreads.emplace_back([t, workers_num, requests_num] {
+        fiberThreads.emplace_back([t, workers_num, requests_num, batch_num] {
             auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num, true);
 
             Kq<FdObj> kqWorker;
@@ -65,7 +66,7 @@ int main(int argc, char* argv[])
                 }
             });
 
-            std::thread master([&kqMaster] {
+            std::thread master([&kqMaster, batch_num] {
                 while (true)
                 {
                     auto fdos = kqMaster.wait();
@@ -73,13 +74,16 @@ int main(int argc, char* argv[])
                         break;
                     for (auto fdo : fdos)
                     {
-                        if (--fdo->getCount() == 0)
-                            kqMaster.unreg(*fdo);
+                        for (auto i = 0; i < batch_num; ++i)
+                        {
+                            if (--fdo->getCount() == 0)
+                                kqMaster.unreg(*fdo);
 
-                        if (fdo->isRead())
-                            readOrWrite(fdo->getFd(), RESPONSE_TEXT, read);
-                        else
-                            readOrWrite(fdo->getFd(), QUERY_TEXT, write);
+                            if (fdo->isRead())
+                                readOrWrite(fdo->getFd(), RESPONSE_TEXT, read);
+                            else
+                                readOrWrite(fdo->getFd(), QUERY_TEXT, write);
+                        }
                     }
                 }
             });
