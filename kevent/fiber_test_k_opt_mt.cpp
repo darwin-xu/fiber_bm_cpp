@@ -16,6 +16,8 @@ int main(int argc, char* argv[])
     auto threads_num  = std::stoi(argv[3]);
     auto batch_num    = std::stoi(argv[4]);
 
+    assert(requests_num % batch_num == 0);
+
     ThreadVector fiberThreads;
     for (auto t = 0; t < threads_num; ++t)
     {

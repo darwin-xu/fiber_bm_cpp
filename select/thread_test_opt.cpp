@@ -7,6 +7,9 @@ int main(int argc, char* argv[])
 
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
+    auto batch_num    = std::stoi(argv[3]);
+
+    assert(requests_num % batch_num == 0);
 
     auto [worker_read, worker_write, master_read, master_write] = initPipes1(workers_num);
 
@@ -25,18 +28,21 @@ int main(int argc, char* argv[])
         }
     });
 
-    std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write] {
+    std::thread mt([workers_num, requests_num, batch_num, mrd = master_read, mwt = master_write] {
         auto pendingItems = workers_num * requests_num;
         while (pendingItems > 0)
         {
             auto [readable, writeable] = sselect(mrd, mwt);
 
-            for (auto fd : readable)
-                readOrWrite(fd, RESPONSE_TEXT, read);
-            for (auto fd : writeable)
+            for (int i = 0; i < batch_num; ++i)
             {
-                readOrWrite(fd, QUERY_TEXT, write);
-                --pendingItems;
+                for (auto fd : readable)
+                    readOrWrite(fd, RESPONSE_TEXT, read);
+                for (auto fd : writeable)
+                {
+                    readOrWrite(fd, QUERY_TEXT, write);
+                    --pendingItems;
+                }
             }
         }
     });

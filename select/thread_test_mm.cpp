@@ -7,6 +7,9 @@ int main(int argc, char* argv[])
 
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
+    auto batch_num    = std::stoi(argv[3]);
+
+    assert(requests_num % batch_num == 0);
 
     auto [worker_read, worker_write, master_read, master_write] = initPipes1(workers_num);
 
@@ -29,11 +32,14 @@ int main(int argc, char* argv[])
     for (auto i = 0; i < workers_num; ++i)
     {
         masters.emplace_back(
-            [requests_num](int rd, int wt) {
-                for (auto n = 0; n < requests_num; ++n)
+            [requests_num, batch_num](int rd, int wt) {
+                for (auto n = 0; n < requests_num / batch_num; ++n)
                 {
-                    readOrWrite(wt, QUERY_TEXT, write);
-                    readOrWrite(rd, RESPONSE_TEXT, read);
+                    for (int j = 0; j < batch_num; ++j)
+                    {
+                        readOrWrite(wt, QUERY_TEXT, write);
+                        readOrWrite(rd, RESPONSE_TEXT, read);
+                    }
                 }
             },
             master_read[i],
