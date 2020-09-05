@@ -13,7 +13,8 @@ public:
     void wait(int fd, Int2FlagMap& ifm)
     {
         ifm[fd] = this;
-        std::unique_lock<boost::fibers::mutex> l(*m);
+        auto l = std::unique_lock(*m);
+        //std::unique_lock<boost::fibers::mutex> l(*m);
         c->wait(
             l,
             [this]() -> auto { return f; });
@@ -107,7 +108,6 @@ int main(int argc, char* argv[])
                 readOrWrite(fd, RESPONSE_TEXT, read);
             for (auto fd : writeable)
             {
-                // std::cout << "write to: " << fd << std::endl;
                 readOrWrite(fd, QUERY_TEXT, write);
                 --pendingItems;
             }
