@@ -44,8 +44,7 @@ void readOrWrite(
     size_t remain = str.length();
     do
     {
-        int r = rw(fd, buf, remain);
-        if (r != -1)
+        if (int r = rw(fd, buf, remain); r != -1)
         {
             buf += r;
             remain -= r;
