@@ -8,14 +8,16 @@ int main(int argc, char* argv[])
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
-    auto [worker_read, worker_write, master_read, master_write] = initPipes1(workers_num);
+    auto [worker_read, worker_write, master_read, master_write] =
+        initPipes1(workers_num);
 
     ThreadVector workers;
     for (auto i = 0; i < workers_num; ++i)
     {
         // Using something like this will cause compile error:
         // workers.emplace_back([i, requests_num, &worker_read, &worker_write]
-        // it is an issue of C++ std: http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#2313
+        // it is an issue of C++ std:
+        // http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#2313
         // https://stackoverflow.com/questions/46114214/lambda-implicit-capture-fails-with-variable-declared-from-structured-binding
         workers.emplace_back(
             [requests_num](int rd, int wt) {
@@ -30,21 +32,22 @@ int main(int argc, char* argv[])
     }
 
     // "Captureing with the initializer" is a workaround.
-    std::thread mt([workers_num, requests_num, mrd = master_read, mwt = master_write] {
-        auto pendingItems = workers_num * requests_num;
-        while (pendingItems > 0)
-        {
-            auto [readable, writeable] = sselect(mrd, mwt);
-
-            for (auto fd : readable)
-                readOrWrite(fd, RESPONSE_TEXT, read);
-            for (auto fd : writeable)
+    std::thread mt(
+        [workers_num, requests_num, mrd = master_read, mwt = master_write] {
+            auto pendingItems = workers_num * requests_num;
+            while (pendingItems > 0)
             {
-                readOrWrite(fd, QUERY_TEXT, write);
-                --pendingItems;
+                auto [readable, writeable] = sselect(mrd, mwt);
+
+                for (auto fd : readable)
+                    readOrWrite(fd, RESPONSE_TEXT, read);
+                for (auto fd : writeable)
+                {
+                    readOrWrite(fd, QUERY_TEXT, write);
+                    --pendingItems;
+                }
             }
-        }
-    });
+        });
 
     for (auto& w : workers)
         w.join();

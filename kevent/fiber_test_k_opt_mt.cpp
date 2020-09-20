@@ -22,7 +22,8 @@ int main(int argc, char* argv[])
     for (auto t = 0; t < threads_num; ++t)
     {
         fiberThreads.emplace_back([t, workers_num, requests_num, batch_num] {
-            auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num, true);
+            auto [worker_read, worker_write, master_read, master_write] =
+                initPipes2(workers_num, requests_num, true);
 
             Kq<FdObj> kqWorker;
             Kq<FdObj> kqMaster;
@@ -36,20 +37,27 @@ int main(int argc, char* argv[])
                 kqMaster.regWrite(master_write[i]);
 
                 workerFibers.emplace_back(
-                    [requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead, FdObj& fdoWrite) {
+                    [requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead,
+                                                            FdObj& fdoWrite) {
                         for (auto n = 0; n < requests_num; ++n)
                         {
-                            readOrWrite(fdoRead.getFd(), QUERY_TEXT, read, [&kqWorker, &fdoRead] {
-                                kqWorker.regRead(fdoRead);
-                                fdoRead.yield();
-                                kqWorker.unreg(fdoRead);
-                            });
+                            readOrWrite(fdoRead.getFd(),
+                                        QUERY_TEXT,
+                                        read,
+                                        [&kqWorker, &fdoRead] {
+                                            kqWorker.regRead(fdoRead);
+                                            fdoRead.yield();
+                                            kqWorker.unreg(fdoRead);
+                                        });
 
-                            readOrWrite(fdoWrite.getFd(), RESPONSE_TEXT, write, [&kqWorker, &fdoWrite] {
-                                kqWorker.regWrite(fdoWrite);
-                                fdoWrite.yield();
-                                kqWorker.unreg(fdoWrite);
-                            });
+                            readOrWrite(fdoWrite.getFd(),
+                                        RESPONSE_TEXT,
+                                        write,
+                                        [&kqWorker, &fdoWrite] {
+                                            kqWorker.regWrite(fdoWrite);
+                                            fdoWrite.yield();
+                                            kqWorker.unreg(fdoWrite);
+                                        });
                         }
                         --workers_cnt;
                     },
@@ -98,8 +106,11 @@ int main(int argc, char* argv[])
 #ifndef NDEBUG
             std::locale our_local(std::cout.getloc(), new separated);
             std::cout.imbue(our_local);
-            std::cout << "[" << std::setw(2) << t << "]: kqWorker.wait = " << std::setw(9) << kqWorker.getWaitCount()
-                      << " kqMaster.wait = " << std::setw(9) << kqMaster.getWaitCount() << std::endl;
+            std::cout << "[" << std::setw(2) << t
+                      << "]: kqWorker.wait = " << std::setw(9)
+                      << kqWorker.getWaitCount()
+                      << " kqMaster.wait = " << std::setw(9)
+                      << kqMaster.getWaitCount() << std::endl;
 #endif
         });
     }
@@ -109,7 +120,9 @@ int main(int argc, char* argv[])
 
     auto end = std::chrono::steady_clock::now();
 
-    printStat(start, end, static_cast<double>(workers_num * requests_num * threads_num));
+    printStat(start,
+              end,
+              static_cast<double>(workers_num * requests_num * threads_num));
 
     return 0;
 }

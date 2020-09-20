@@ -13,7 +13,8 @@ int main(int argc, char* argv[])
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
-    auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num);
+    auto [worker_read, worker_write, master_read, master_write] =
+        initPipes2(workers_num, requests_num);
 
     for (auto i = 0; i < workers_num; ++i)
     {
@@ -52,9 +53,11 @@ int main(int argc, char* argv[])
     // Main thread as the worker
     while (true)
     {
-        if (std::find_if(worker_read.begin(), worker_read.end(), [](FdObj& fdo) -> bool {
-                return fdo.getCount() != 0;
-            }) == worker_read.end())
+        if (std::find_if(worker_read.begin(),
+                         worker_read.end(),
+                         [](FdObj& fdo) -> bool {
+                             return fdo.getCount() != 0;
+                         }) == worker_read.end())
             break;
 
         auto fdos = kqWorker.wait();

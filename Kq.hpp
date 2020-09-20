@@ -44,7 +44,13 @@ public:
         fdSet.erase(t.getFd());
 #ifdef MACOS
         struct kevent event;
-        EV_SET(&event, t.getFd(), t.isRead() ? EVFILT_READ : EVFILT_WRITE, EV_DELETE, 0, 0, &t);
+        EV_SET(&event,
+               t.getFd(),
+               t.isRead() ? EVFILT_READ : EVFILT_WRITE,
+               EV_DELETE,
+               0,
+               0,
+               &t);
         auto r = kevent(_kq, &event, 1, NULL, 0, NULL);
         assert(r != -1);
 #endif

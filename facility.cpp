@@ -9,7 +9,8 @@
 std::string QUERY_TEXT    = "STATUS";
 std::string RESPONSE_TEXT = "OK";
 
-std::pair<IntVector, IntVector> sselect(const IntVector& rds, const IntVector& wts)
+std::pair<IntVector, IntVector> sselect(const IntVector& rds,
+                                        const IntVector& wts)
 {
     fd_set rdSet;
     fd_set wtSet;
@@ -54,16 +55,20 @@ T kkevent()
 
 void printStat(const TP& start, const TP& end, double workload)
 {
-    auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    auto elapsed_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+            .count();
 
     std::locale our_local(std::cout.getloc(), new separated);
     std::cout.imbue(our_local);
     std::cout << "elapsed time(ms): " << elapsed_ms << std::endl;
-    std::cout << "items per second: " << std::fixed << std::setprecision(0) << workload * 1000 / elapsed_ms
-              << std::endl;
+    std::cout << "items per second: " << std::fixed << std::setprecision(0)
+              << workload * 1000 / elapsed_ms << std::endl;
 }
 
-std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(int workers_number, bool nonblock)
+std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
+    int  workers_number,
+    bool nonblock)
 {
     IntVector worker_read;
     IntVector worker_write;
@@ -92,10 +97,14 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(int workers_nu
         worker_write.push_back(p2[1]);
     }
 
-    return std::make_tuple(worker_read, worker_write, master_read, master_write);
+    return std::make_tuple(worker_read,
+                           worker_write,
+                           master_read,
+                           master_write);
 }
 
-std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int workers_number, int requests_number, bool nonblock)
+std::tuple<FdVector, FdVector, FdVector, FdVector>
+initPipes2(int workers_number, int requests_number, bool nonblock)
 {
     FdVector worker_read;
     FdVector worker_write;

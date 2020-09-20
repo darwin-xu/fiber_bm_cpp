@@ -14,7 +14,8 @@ int main(int argc, char* argv[])
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
-    auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num, true);
+    auto [worker_read, worker_write, master_read, master_write] =
+        initPipes2(workers_num, requests_num, true);
 
     Kq<FdObj> kqWorker;
     Kq<FdObj> kqMaster;
@@ -28,7 +29,8 @@ int main(int argc, char* argv[])
         kqMaster.regWrite(master_write[i]);
 
         workerFibers.emplace_back(
-            [requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead, FdObj& fdoWrite) {
+            [requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead,
+                                                    FdObj& fdoWrite) {
                 for (auto n = 0; n < requests_num; ++n)
                 {
                     kqWorker.regRead(fdoRead);

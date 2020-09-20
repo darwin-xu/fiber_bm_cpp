@@ -11,7 +11,8 @@ int main(int argc, char* argv[])
 
     assert(requests_num % batch_num == 0);
 
-    auto [worker_read, worker_write, master_read, master_write] = initPipes1(workers_num);
+    auto [worker_read, worker_write, master_read, master_write] =
+        initPipes1(workers_num);
 
     ThreadVector workers;
     for (auto i = 0; i < workers_num; ++i)

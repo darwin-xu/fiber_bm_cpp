@@ -10,7 +10,8 @@ int main(int argc, char* argv[])
     auto workers_num  = std::stoi(argv[1]);
     auto requests_num = std::stoi(argv[2]);
 
-    auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num);
+    auto [worker_read, worker_write, master_read, master_write] =
+        initPipes2(workers_num, requests_num);
 
     Kq<FdObj> kqMaster;
 

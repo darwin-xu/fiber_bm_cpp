@@ -59,20 +59,23 @@ void readOrWrite(
     } while (remain != 0);
 }
 
-std::pair<IntVector, IntVector> sselect(const IntVector& rds, const IntVector& wts);
+std::pair<IntVector, IntVector> sselect(const IntVector& rds,
+                                        const IntVector& wts);
 
 using TP = decltype(std::chrono::steady_clock::now());
 
 void printStat(const TP& start, const TP& end, double workload);
 
-std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(int workers_number, bool nonblock = false);
+std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
+    int  workers_number,
+    bool nonblock = false);
 
-std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(int  workers_number,
-                                                              int  requests_number,
-                                                              bool nonblock = false);
+std::tuple<FdVector, FdVector, FdVector, FdVector>
+initPipes2(int workers_number, int requests_number, bool nonblock = false);
 
 void setNonblock(int fd);
 
-#define TF std::this_thread::get_id() << "_" << boost::this_fiber::get_id() << ":"
+#define TF \
+    std::this_thread::get_id() << "_" << boost::this_fiber::get_id() << ":"
 
 #endif // FACILITY_H

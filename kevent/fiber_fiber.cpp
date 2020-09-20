@@ -21,8 +21,12 @@ int main(int argc, char* argv[])
     ThreadVector workerFiberThreads;
     for (auto t = 0; t < threads_num; ++t)
     {
-        workerFiberThreads.emplace_back([t, workers_num, requests_num, batch_num] {
-            auto [worker_read, worker_write, master_read, master_write] = initPipes2(workers_num, requests_num, true);
+        workerFiberThreads.emplace_back([t,
+                                         workers_num,
+                                         requests_num,
+                                         batch_num] {
+            auto [worker_read, worker_write, master_read, master_write] =
+                initPipes2(workers_num, requests_num, true);
 
             Kq<FdObj> kqWorker;
 
@@ -64,9 +68,12 @@ int main(int argc, char* argv[])
                 for (auto i = 0; i < workers_num; ++i)
                 {
                     masterFibers.emplace_back(
-                        [requests_num, batch_num, &masters_cnt, &kqMaster, &readOrYeild, &writeOrYeild](
-                            FdObj& fdoRead,
-                            FdObj& fdoWrite) {
+                        [requests_num,
+                         batch_num,
+                         &masters_cnt,
+                         &kqMaster,
+                         &readOrYeild,
+                         &writeOrYeild](FdObj& fdoRead, FdObj& fdoWrite) {
                             for (auto n = 0; n < requests_num / batch_num; ++n)
                             {
                                 for (auto j = 0; j < batch_num; ++j)
@@ -74,14 +81,18 @@ int main(int argc, char* argv[])
                                     readOrWrite(fdoWrite.getFd(),
                                                 QUERY_TEXT,
                                                 write,
-                                                std::bind(writeOrYeild, std::ref(kqMaster), std::ref(fdoWrite)));
+                                                std::bind(writeOrYeild,
+                                                          std::ref(kqMaster),
+                                                          std::ref(fdoWrite)));
                                 }
                                 for (auto j = 0; j < batch_num; ++j)
                                 {
                                     readOrWrite(fdoRead.getFd(),
                                                 RESPONSE_TEXT,
                                                 read,
-                                                std::bind(readOrYeild, std::ref(kqMaster), std::ref(fdoRead)));
+                                                std::bind(readOrYeild,
+                                                          std::ref(kqMaster),
+                                                          std::ref(fdoRead)));
                                 }
                             }
                             --masters_cnt;
@@ -90,7 +101,9 @@ int main(int argc, char* argv[])
                         std::ref(mwt[i]));
                 }
 
-                boost::fibers::fiber reactorFiber(reactor, std::ref(masters_cnt), std::ref(kqMaster));
+                boost::fibers::fiber reactorFiber(reactor,
+                                                  std::ref(masters_cnt),
+                                                  std::ref(kqMaster));
 
                 for (auto& m : masterFibers)
                     m.join();
@@ -102,25 +115,34 @@ int main(int argc, char* argv[])
             for (auto i = 0; i < workers_num; ++i)
             {
                 workerFibers.emplace_back(
-                    [requests_num, &workers_cnt, &kqWorker, &readOrYeild, &writeOrYeild](FdObj& fdoRead,
-                                                                                         FdObj& fdoWrite) {
+                    [requests_num,
+                     &workers_cnt,
+                     &kqWorker,
+                     &readOrYeild,
+                     &writeOrYeild](FdObj& fdoRead, FdObj& fdoWrite) {
                         for (auto n = 0; n < requests_num; ++n)
                         {
                             readOrWrite(fdoRead.getFd(),
                                         QUERY_TEXT,
                                         read,
-                                        std::bind(readOrYeild, std::ref(kqWorker), std::ref(fdoRead)));
+                                        std::bind(readOrYeild,
+                                                  std::ref(kqWorker),
+                                                  std::ref(fdoRead)));
                             readOrWrite(fdoWrite.getFd(),
                                         RESPONSE_TEXT,
                                         write,
-                                        std::bind(writeOrYeild, std::ref(kqWorker), std::ref(fdoWrite)));
+                                        std::bind(writeOrYeild,
+                                                  std::ref(kqWorker),
+                                                  std::ref(fdoWrite)));
                         }
                         --workers_cnt;
                     },
                     std::ref(worker_read[i]),
                     std::ref(worker_write[i]));
             }
-            boost::fibers::fiber reactorFiber(reactor, std::ref(workers_cnt), std::ref(kqWorker));
+            boost::fibers::fiber reactorFiber(reactor,
+                                              std::ref(workers_cnt),
+                                              std::ref(kqWorker));
 
             for (auto& w : workerFibers)
                 w.join();
@@ -130,8 +152,11 @@ int main(int argc, char* argv[])
 #ifndef NDEBUG
             std::locale our_local(std::cout.getloc(), new separated);
             std::cout.imbue(our_local);
-            std::cout << "[" << std::setw(2) << t << "]: kqWorker.wait = " << std::setw(9) << kqWorker.getWaitCount()
-                      << " kqMaster.wait = " << std::setw(9) << kqMaster.getWaitCount() << std::endl;
+            std::cout << "[" << std::setw(2) << t
+                      << "]: kqWorker.wait = " << std::setw(9)
+                      << kqWorker.getWaitCount()
+                      << " kqMaster.wait = " << std::setw(9)
+                      << kqMaster.getWaitCount() << std::endl;
 #endif
         });
     }
@@ -141,7 +166,9 @@ int main(int argc, char* argv[])
 
     auto end = std::chrono::steady_clock::now();
 
-    printStat(start, end, static_cast<double>(workers_num * requests_num * threads_num));
+    printStat(start,
+              end,
+              static_cast<double>(workers_num * requests_num * threads_num));
 
     return 0;
 }
