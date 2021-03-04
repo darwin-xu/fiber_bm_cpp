@@ -4,6 +4,9 @@
 - macOS
 - ubuntu
 
+## Dependency
+- Boost 1.73 or later (ealier versions might work but I haven't tested)
+
 ## Building Instructions
 - mkdir build
 - cd build
