@@ -61,8 +61,8 @@ void printStat(const TP& start, const TP& end, double workload)
 
     std::locale our_local(std::cout.getloc(), new separated);
     std::cout.imbue(our_local);
-    std::cout << "elapsed time(ms): " << elapsed_ms << std::endl;
-    std::cout << "items per second: " << std::fixed << std::setprecision(0)
+    std::cout << "Elapsed time(ms)       : " << elapsed_ms << std::endl;
+    std::cout << "Transactions per second: " << std::fixed << std::setprecision(0)
               << workload * 1000 / elapsed_ms << std::endl;
 }
 
