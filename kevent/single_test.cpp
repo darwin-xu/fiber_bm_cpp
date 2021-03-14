@@ -10,8 +10,8 @@ int main(int argc, char* argv[])
     Kq<FdObj> kqMaster;
     Kq<FdObj> kqWorker;
 
-    auto workers_num  = std::stoi(argv[1]);
-    auto requests_num = std::stoi(argv[2]);
+    auto [workers_num, requests_num] =
+        parseArg2(argc, argv, "<workers number> <requests number>");
 
     auto [worker_read, worker_write, master_read, master_write] =
         initPipes2(workers_num, requests_num);
@@ -36,11 +36,11 @@ int main(int argc, char* argv[])
             {
                 if (fdo->isRead())
                 {
-                    readOrWrite(fdo->getFd(), RESPONSE_TEXT, read);
+                    operate(fdo->getFd(), RESPONSE_TEXT, read);
                 }
                 else
                 {
-                    readOrWrite(fdo->getFd(), QUERY_TEXT, write);
+                    operate(fdo->getFd(), QUERY_TEXT, write);
                     if (--fdo->getCount() == 0)
                     {
                         kqMaster.unreg(*fdo);
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
         {
             if (fdo->isRead())
             {
-                readOrWrite(fdo->getFd(), QUERY_TEXT, read);
+                operate(fdo->getFd(), QUERY_TEXT, read);
                 if (--fdo->getCount() == 0)
                 {
                     kqWorker.unreg(*fdo);
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
             }
             else
             {
-                readOrWrite(fdo->getFd(), RESPONSE_TEXT, write);
+                operate(fdo->getFd(), RESPONSE_TEXT, write);
             }
         }
     }

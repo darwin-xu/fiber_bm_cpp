@@ -5,48 +5,51 @@ int main(int argc, char* argv[])
 {
     auto start = std::chrono::steady_clock::now();
 
-    auto workers_num  = std::stoi(argv[1]);
-    auto requests_num = std::stoi(argv[2]);
-    auto batch_num    = std::stoi(argv[3]);
+    auto [workers_num, requests_num, batches_num] =
+        parseArg3(argc,
+                  argv,
+                  "<workers number> <requests number> <batches number>");
 
-    assert(requests_num % batch_num == 0);
+    assert(requests_num % batches_num == 0);
 
     auto [worker_read, worker_write, master_read, master_write] =
         initPipes1(workers_num);
 
-    std::thread wk(
-        [workers_num, requests_num, wrd = worker_read, wrt = worker_write] {
-            auto pendingItems = workers_num * requests_num;
-            while (pendingItems > 0)
+    std::thread wk([wn  = workers_num,
+                    rn  = requests_num,
+                    wrd = worker_read,
+                    wrt = worker_write] {
+        auto pendingItems = wn * rn;
+        while (pendingItems > 0)
+        {
+            auto [readable, writeable] = sselect(wrd, wrt);
+            for (auto fd : readable)
             {
-                auto [readable, writeable] = sselect(wrd, wrt);
-                for (auto fd : readable)
-                {
-                    readOrWrite(fd, QUERY_TEXT, read);
-                    --pendingItems;
-                }
-                for (auto fd : writeable)
-                    readOrWrite(fd, RESPONSE_TEXT, write);
+                operate(fd, QUERY_TEXT, read);
+                --pendingItems;
             }
-        });
+            for (auto fd : writeable)
+                operate(fd, RESPONSE_TEXT, write);
+        }
+    });
 
-    std::thread mt([workers_num,
-                    requests_num,
-                    batch_num,
+    std::thread mt([wn  = workers_num,
+                    rn  = requests_num,
+                    bn  = batches_num,
                     mrd = master_read,
                     mwt = master_write] {
-        auto pendingItems = workers_num * requests_num;
+        auto pendingItems = wn * rn;
         while (pendingItems > 0)
         {
             auto [readable, writeable] = sselect(mrd, mwt);
 
-            for (int i = 0; i < batch_num; ++i)
+            for (int i = 0; i < bn; ++i)
             {
                 for (auto fd : readable)
-                    readOrWrite(fd, RESPONSE_TEXT, read);
+                    operate(fd, RESPONSE_TEXT, read);
                 for (auto fd : writeable)
                 {
-                    readOrWrite(fd, QUERY_TEXT, write);
+                    operate(fd, QUERY_TEXT, write);
                     --pendingItems;
                 }
             }

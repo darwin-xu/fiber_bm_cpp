@@ -44,8 +44,8 @@ int main(int argc, char* argv[])
 {
     auto start = std::chrono::steady_clock::now();
 
-    auto workers_num  = std::stoi(argv[1]);
-    auto requests_num = std::stoi(argv[2]);
+    auto [workers_num, requests_num] =
+        parseArg2(argc, argv, "<workers number> <requests number>");
 
     auto [worker_read, worker_write, master_read, master_write] =
         initPipes1(workers_num);
@@ -65,20 +65,20 @@ int main(int argc, char* argv[])
     for (auto i = 0; i < workers_num; ++i)
     {
         fv.emplace_back([i,
-                         requests_num,
+                         rn  = requests_num,
                          wrd = worker_read,
                          wwt = worker_write,
                          &fvRead,
                          &fvWrite,
                          &ifmRead,
                          &ifmWrite] {
-            for (auto n = 0; n < requests_num; ++n)
+            for (auto n = 0; n < rn; ++n)
             {
                 fvRead[i].wait(wrd[i], ifmRead);
-                readOrWrite(wrd[i], QUERY_TEXT, read);
+                operate(wrd[i], QUERY_TEXT, read);
 
                 fvWrite[i].wait(wwt[i], ifmWrite);
-                readOrWrite(wwt[i], RESPONSE_TEXT, write);
+                operate(wwt[i], RESPONSE_TEXT, write);
             }
         });
     }
@@ -108,22 +108,24 @@ int main(int argc, char* argv[])
         }
     });
 
-    std::thread mt(
-        [workers_num, requests_num, mrd = master_read, mwt = master_write] {
-            auto pendingItems = workers_num * requests_num;
-            while (pendingItems > 0)
-            {
-                auto [readable, writeable] = sselect(mrd, mwt);
+    std::thread mt([wn  = workers_num,
+                    rn  = requests_num,
+                    mrd = master_read,
+                    mwt = master_write] {
+        auto pendingItems = wn * rn;
+        while (pendingItems > 0)
+        {
+            auto [readable, writeable] = sselect(mrd, mwt);
 
-                for (auto fd : readable)
-                    readOrWrite(fd, RESPONSE_TEXT, read);
-                for (auto fd : writeable)
-                {
-                    readOrWrite(fd, QUERY_TEXT, write);
-                    --pendingItems;
-                }
+            for (auto fd : readable)
+                operate(fd, RESPONSE_TEXT, read);
+            for (auto fd : writeable)
+            {
+                operate(fd, QUERY_TEXT, write);
+                --pendingItems;
             }
-        });
+        }
+    });
 
     for (auto& f : fv)
         f.join();

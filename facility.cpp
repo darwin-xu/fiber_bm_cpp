@@ -146,3 +146,47 @@ void setNonblock(int fd)
     int r = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
     assert(r != -1);
 }
+
+auto checkArgCount =
+    [](int needArgc, int argc, char* argv[], const std::string& prompt) {
+        if (argc < needArgc)
+        {
+            std::cout << argv[0] << " " << prompt << std::endl;
+            exit(-1);
+        }
+    };
+
+int parseArg1(int argc, char* argv[], const std::string& prompt)
+{
+    checkArgCount(2, argc, argv, prompt);
+    return std::stoi(argv[1]);
+}
+
+std::tuple<int, int> parseArg2(int                argc,
+                               char*              argv[],
+                               const std::string& prompt)
+{
+    checkArgCount(3, argc, argv, prompt);
+    return std::make_tuple(std::stoi(argv[1]), std::stoi(argv[2]));
+}
+
+std::tuple<int, int, int> parseArg3(int                argc,
+                                    char*              argv[],
+                                    const std::string& prompt)
+{
+    checkArgCount(4, argc, argv, prompt);
+    return std::make_tuple(std::stoi(argv[1]),
+                           std::stoi(argv[2]),
+                           std::stoi(argv[3]));
+}
+
+std::tuple<int, int, int, int> parseArg4(int                argc,
+                                         char*              argv[],
+                                         const std::string& prompt)
+{
+    checkArgCount(5, argc, argv, prompt);
+    return std::make_tuple(std::stoi(argv[1]),
+                           std::stoi(argv[2]),
+                           std::stoi(argv[3]),
+                           std::stoi(argv[4]));
+}

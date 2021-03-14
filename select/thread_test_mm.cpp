@@ -5,11 +5,12 @@ int main(int argc, char* argv[])
 {
     auto start = std::chrono::steady_clock::now();
 
-    auto workers_num  = std::stoi(argv[1]);
-    auto requests_num = std::stoi(argv[2]);
-    auto batch_num    = std::stoi(argv[3]);
+    auto [workers_num, requests_num, batches_num] = parseArg3(
+        argc,
+        argv,
+        "<workers number> <requests number> <batches number>");
 
-    assert(requests_num % batch_num == 0);
+    assert(requests_num % batches_num == 0);
 
     auto [worker_read, worker_write, master_read, master_write] =
         initPipes1(workers_num);
@@ -18,11 +19,11 @@ int main(int argc, char* argv[])
     for (auto i = 0; i < workers_num; ++i)
     {
         workers.emplace_back(
-            [requests_num](int rd, int wt) {
-                for (auto n = 0; n < requests_num; ++n)
+            [rn = requests_num](int rd, int wt) {
+                for (auto n = 0; n < rn; ++n)
                 {
-                    readOrWrite(rd, QUERY_TEXT, read);
-                    readOrWrite(wt, RESPONSE_TEXT, write);
+                    operate(rd, QUERY_TEXT, read);
+                    operate(wt, RESPONSE_TEXT, write);
                 }
             },
             worker_read[i],
@@ -33,13 +34,13 @@ int main(int argc, char* argv[])
     for (auto i = 0; i < workers_num; ++i)
     {
         masters.emplace_back(
-            [requests_num, batch_num](int rd, int wt) {
-                for (auto n = 0; n < requests_num / batch_num; ++n)
+            [rn = requests_num, bn = batches_num](int rd, int wt) {
+                for (auto n = 0; n < rn / bn; ++n)
                 {
-                    for (int j = 0; j < batch_num; ++j)
+                    for (int j = 0; j < bn; ++j)
                     {
-                        readOrWrite(wt, QUERY_TEXT, write);
-                        readOrWrite(rd, RESPONSE_TEXT, read);
+                        operate(wt, QUERY_TEXT, write);
+                        operate(rd, RESPONSE_TEXT, read);
                     }
                 }
             },

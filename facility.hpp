@@ -30,11 +30,11 @@ using Int2IntMap   = std::map<int, int>;
 extern std::string QUERY_TEXT;
 extern std::string RESPONSE_TEXT;
 
-template<class RWF, class YieldAt = void (*)(void)>
-void readOrWrite(
+template<class Action, class YieldAt = void (*)(void)>
+void operate(
     int          fd,
     std::string& str,
-    RWF&&        rw,
+    Action&&     rw,
     YieldAt&&    yieldAt = [] {
     })
 {
@@ -77,5 +77,19 @@ void setNonblock(int fd);
 
 #define TF \
     std::this_thread::get_id() << "_" << boost::this_fiber::get_id() << ":"
+
+int parseArg1(int argc, char* argv[], const std::string& prompt);
+
+std::tuple<int, int> parseArg2(int                argc,
+                               char*              argv[],
+                               const std::string& prompt);
+
+std::tuple<int, int, int> parseArg3(int                argc,
+                                    char*              argv[],
+                                    const std::string& prompt);
+
+std::tuple<int, int, int, int> parseArg4(int                argc,
+                                         char*              argv[],
+                                         const std::string& prompt);
 
 #endif // FACILITY_H

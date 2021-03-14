@@ -3,8 +3,8 @@ project(fiber_bm_cpp VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 
-include_directories(../boost_1_74_0/)
-link_directories(../boost_1_74_0/stage/lib)
+include_directories(../../../boost_1_75_0/)
+link_directories(../../../boost_1_75_0/stage/lib)
 
 link_libraries(boost_context)
 link_libraries(pthread)

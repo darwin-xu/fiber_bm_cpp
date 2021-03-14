@@ -4,7 +4,8 @@
 
 int main(int argc, char* argv[])
 {
-    auto requests_num = std::stoi(argv[1]);
+    auto requests_num =
+        parseArg1(argc, argv, "<requests number>");
 
     int  fildes1[2];
     auto r1 = pipe(fildes1);
@@ -17,10 +18,10 @@ int main(int argc, char* argv[])
 
     for (auto i = 0; i < requests_num; ++i)
     {
-        readOrWrite(fildes1[1], QUERY_TEXT, write);
-        readOrWrite(fildes1[0], QUERY_TEXT, read);
-        readOrWrite(fildes2[1], RESPONSE_TEXT, write);
-        readOrWrite(fildes2[0], RESPONSE_TEXT, read);
+        operate(fildes1[1], QUERY_TEXT, write);
+        operate(fildes1[0], QUERY_TEXT, read);
+        operate(fildes2[1], RESPONSE_TEXT, write);
+        operate(fildes2[0], RESPONSE_TEXT, read);
     }
 
     auto end = std::chrono::steady_clock::now();

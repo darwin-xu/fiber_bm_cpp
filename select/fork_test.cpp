@@ -5,8 +5,8 @@ int main(int argc, char* argv[])
 {
     auto start = std::chrono::steady_clock::now();
 
-    auto workers_num  = std::stoi(argv[1]);
-    auto requests_num = std::stoi(argv[2]);
+    auto [workers_num, requests_num] =
+        parseArg2(argc, argv, "<workers number> <requests number>");
 
     auto [worker_read, worker_write, master_read, master_write] =
         initPipes1(workers_num);
@@ -20,8 +20,8 @@ int main(int argc, char* argv[])
         {
             for (auto n = 0; n < requests_num; ++n)
             {
-                readOrWrite(worker_read[i], QUERY_TEXT, read);
-                readOrWrite(worker_write[i], RESPONSE_TEXT, write);
+                operate(worker_read[i], QUERY_TEXT, read);
+                operate(worker_write[i], RESPONSE_TEXT, write);
             }
             exit(0);
         }
@@ -36,22 +36,24 @@ int main(int argc, char* argv[])
         pending_write_msgs[i] = requests_num;
     Int2IntMap pending_read_msgs = pending_write_msgs;
 
-    std::thread mt(
-        [workers_num, requests_num, mrd = master_read, mwt = master_write] {
-            auto pendingItems = workers_num * requests_num;
-            while (pendingItems > 0)
-            {
-                auto [readable, writeable] = sselect(mrd, mwt);
+    std::thread mt([wn  = workers_num,
+                    rn  = requests_num,
+                    mrd = master_read,
+                    mwt = master_write] {
+        auto pendingItems = wn * rn;
+        while (pendingItems > 0)
+        {
+            auto [readable, writeable] = sselect(mrd, mwt);
 
-                for (auto fd : readable)
-                    readOrWrite(fd, RESPONSE_TEXT, read);
-                for (auto fd : writeable)
-                {
-                    readOrWrite(fd, QUERY_TEXT, write);
-                    --pendingItems;
-                }
+            for (auto fd : readable)
+                operate(fd, RESPONSE_TEXT, read);
+            for (auto fd : writeable)
+            {
+                operate(fd, QUERY_TEXT, write);
+                --pendingItems;
             }
-        });
+        }
+    });
 
     for (auto& pid : pv)
         waitpid(pid, NULL, 0);

@@ -11,8 +11,8 @@ int main(int argc, char* argv[])
 {
     auto start = std::chrono::steady_clock::now();
 
-    auto workers_num  = std::stoi(argv[1]);
-    auto requests_num = std::stoi(argv[2]);
+    auto [workers_num, requests_num] =
+        parseArg2(argc, argv, "<workers number> <requests number>");
 
     auto [worker_read, worker_write, master_read, master_write] =
         initPipes2(workers_num, requests_num, true);
@@ -29,19 +29,19 @@ int main(int argc, char* argv[])
         kqMaster.regWrite(master_write[i]);
 
         workerFibers.emplace_back(
-            [requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead,
-                                                    FdObj& fdoWrite) {
-                for (auto n = 0; n < requests_num; ++n)
+            [rn = requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead,
+                                                         FdObj& fdoWrite) {
+                for (auto n = 0; n < rn; ++n)
                 {
                     kqWorker.regRead(fdoRead);
                     fdoRead.yield();
                     kqWorker.unreg(fdoRead);
-                    readOrWrite(fdoRead.getFd(), QUERY_TEXT, read);
+                    operate(fdoRead.getFd(), QUERY_TEXT, read);
 
                     kqWorker.regWrite(fdoWrite);
                     fdoWrite.yield();
                     kqWorker.unreg(fdoWrite);
-                    readOrWrite(fdoWrite.getFd(), RESPONSE_TEXT, write);
+                    operate(fdoWrite.getFd(), RESPONSE_TEXT, write);
                 }
                 --workers_cnt;
             },
@@ -72,9 +72,9 @@ int main(int argc, char* argv[])
                     kqMaster.unreg(*fdo);
 
                 if (fdo->isRead())
-                    readOrWrite(fdo->getFd(), RESPONSE_TEXT, read);
+                    operate(fdo->getFd(), RESPONSE_TEXT, read);
                 else
-                    readOrWrite(fdo->getFd(), QUERY_TEXT, write);
+                    operate(fdo->getFd(), QUERY_TEXT, write);
             }
         }
     });
