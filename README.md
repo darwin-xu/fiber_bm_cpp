@@ -5,7 +5,7 @@
 - ubuntu
 
 ## Dependency
-- Boost 1.73 or later (ealier versions might work but I haven't tested)
+- Boost 1.73 or later (earlier versions might work but I haven't tested it), build it with: b2 --with-fiber
 
 ## Building Instructions
 - mkdir build
