@@ -9,19 +9,19 @@ using FiberVector = std::vector<boost::fibers::fiber>;
 
 int main(int argc, char* argv[])
 {
-    auto start = std::chrono::steady_clock::now();
-
+    // 1. Preparation
     auto [workers_num, requests_num] =
         parseArg2(argc, argv, "<workers number> <requests number>");
 
     auto [worker_read, worker_write, master_read, master_write] =
         initPipes2(workers_num, requests_num, true);
 
-    Kq<FdObj> kqWorker;
-    Kq<FdObj> kqMaster;
+    // 2. Start evaluation
+    auto start = std::chrono::steady_clock::now();
 
-    auto workers_cnt = workers_num;
-
+    Kq<FdObj>   kqWorker;
+    Kq<FdObj>   kqMaster;
+    auto        workers_cnt = workers_num;
     FiberVector workerFibers;
     for (auto i = 0; i < workers_num; ++i)
     {
@@ -94,6 +94,7 @@ int main(int argc, char* argv[])
 
     auto end = std::chrono::steady_clock::now();
 
+    // 3. Output statistics
     printStat(start, end, static_cast<double>(workers_num * requests_num));
 
     return 0;

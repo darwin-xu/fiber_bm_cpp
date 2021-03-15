@@ -4,8 +4,8 @@
 
 int main(int argc, char* argv[])
 {
-    auto requests_num =
-        parseArg1(argc, argv, "<requests number>");
+    // 1. Preparation
+    auto requests_num = parseArg1(argc, argv, "<requests number>");
 
     int  fildes1[2];
     auto r1 = pipe(fildes1);
@@ -14,6 +14,7 @@ int main(int argc, char* argv[])
     auto r2 = pipe(fildes2);
     assert(r2 == 0);
 
+    // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
     for (auto i = 0; i < requests_num; ++i)
@@ -26,6 +27,7 @@ int main(int argc, char* argv[])
 
     auto end = std::chrono::steady_clock::now();
 
+    // 3. Output statistics
     printStat(start, end, requests_num);
 
     return 0;

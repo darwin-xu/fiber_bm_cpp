@@ -5,8 +5,7 @@
 
 int main(int argc, char* argv[])
 {
-    auto start = std::chrono::steady_clock::now();
-
+    // 1. Preparation
     Kq<FdObj> kqMaster;
     Kq<FdObj> kqWorker;
 
@@ -16,6 +15,8 @@ int main(int argc, char* argv[])
     auto [worker_read, worker_write, master_read, master_write] =
         initPipes2(workers_num, requests_num);
 
+    // 2. Start evaluation
+    auto start = std::chrono::steady_clock::now();
     for (auto i = 0; i < workers_num; ++i)
     {
         kqMaster.regRead(master_read[i]);
@@ -82,6 +83,7 @@ int main(int argc, char* argv[])
 
     auto end = std::chrono::steady_clock::now();
 
+    // 3. Output statistics
     printStat(start, end, static_cast<double>(workers_num * requests_num));
 
     return 0;
