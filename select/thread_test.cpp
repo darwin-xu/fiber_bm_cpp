@@ -7,7 +7,7 @@ int main(int argc, char* argv[])
     auto [workers_num, requests_num] =
         parseArg2(argc, argv, "<workers number> <requests number>");
 
-    auto [worker_read, worker_write, master_read, master_write] =
+    auto [worker_read, worker_write, client_read, client_write] =
         initPipes1(workers_num);
 
     // 2. Start evaluation
@@ -34,14 +34,14 @@ int main(int argc, char* argv[])
     }
 
     // "Captureing with the initializer" is a workaround.
-    std::thread mt([wn  = workers_num,
+    std::thread ct([wn  = workers_num,
                     rn  = requests_num,
-                    mrd = master_read,
-                    mwt = master_write] {
+                    crd = client_read,
+                    cwt = client_write] {
         auto pendingItems = wn * rn;
         while (pendingItems > 0)
         {
-            auto [readable, writeable] = sselect(mrd, mwt);
+            auto [readable, writeable] = sselect(crd, cwt);
 
             for (auto fd : readable)
                 operate(fd, RESPONSE_TEXT, read);
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 
     for (auto& w : workers)
         w.join();
-    mt.join();
+    ct.join();
 
     auto end = std::chrono::steady_clock::now();
 
