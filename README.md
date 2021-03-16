@@ -16,3 +16,7 @@
 ## Override compile
 export CC=clang-6.0
 export CXX=clang++-6.0
+
+## TODO list
+- [ ] Remove all the words of "master".
+- [ ] Change the words of "worker" into something more meaningful.
