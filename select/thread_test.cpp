@@ -4,17 +4,17 @@
 int main(int argc, char* argv[])
 {
     // 1. Preparation
-    auto [workersNumber, requestsNumber] =
-        parseArg2(argc, argv, "<workers number> <requests number>");
+    auto [clientsNumber, requestsNumber] =
+        parseArg2(argc, argv, "<clients number> <requests number>");
 
     auto [workerRead, workerWrite, clientRead, clientWrite] =
-        initPipes1(workersNumber);
+        initPipes1(clientsNumber);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
     ThreadVector workers;
-    for (auto i = 0; i < workersNumber; ++i)
+    for (auto i = 0; i < clientsNumber; ++i)
     {
         // Using something like this will cause compile error:
         // workers.emplace_back([i, requests_num, &worker_read, &worker_write]
@@ -34,11 +34,11 @@ int main(int argc, char* argv[])
     }
 
     // "Captureing with the initializer" is a workaround.
-    std::thread ct([wn  = workersNumber,
+    std::thread ct([cn  = clientsNumber,
                     rn  = requestsNumber,
                     crd = clientRead,
                     cwt = clientWrite] {
-        auto pendingItems = wn * rn;
+        auto pendingItems = cn * rn;
         while (pendingItems > 0)
         {
             auto [readable, writeable] = sselect(crd, cwt);
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
     auto end = std::chrono::steady_clock::now();
 
     // 3. Output statistics
-    printStat(start, end, static_cast<double>(workersNumber * requestsNumber));
+    printStat(start, end, static_cast<double>(clientsNumber * requestsNumber));
 
     return 0;
 }

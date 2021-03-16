@@ -67,11 +67,11 @@ using TP = decltype(std::chrono::steady_clock::now());
 void printStat(const TP& start, const TP& end, double workload);
 
 std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
-    int  workersNumber,
+    int  pipesNumber,
     bool nonblock = false);
 
 std::tuple<FdVector, FdVector, FdVector, FdVector>
-initPipes2(int workersNumber, int requestsNumber, bool nonblock = false);
+initPipes2(int pipesNumber, int requestsNumber, bool nonblock = false);
 
 void setNonblock(int fd);
 

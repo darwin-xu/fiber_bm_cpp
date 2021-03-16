@@ -68,7 +68,7 @@ void printStat(const TP& start, const TP& end, double workload)
 }
 
 std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
-    int  workersNumber,
+    int  pipesNumber,
     bool nonblock)
 {
     IntVector workerRead;
@@ -76,7 +76,7 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
     IntVector clientRead;
     IntVector clientWrite;
 
-    for (auto i = 0; i < workersNumber; ++i)
+    for (auto i = 0; i < pipesNumber; ++i)
     {
         int  p1[2], p2[2];
         auto r1 = pipe(p1);
@@ -102,14 +102,14 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
 }
 
 std::tuple<FdVector, FdVector, FdVector, FdVector>
-initPipes2(int workersNumber, int requestsNumber, bool nonblock)
+initPipes2(int pipesNumber, int requestsNumber, bool nonblock)
 {
     FdVector workerRead;
     FdVector workerWrite;
     FdVector clientRead;
     FdVector clientWrite;
 
-    for (auto i = 0; i < workersNumber; ++i)
+    for (auto i = 0; i < pipesNumber; ++i)
     {
         int  p1[2], p2[2];
         auto r1 = pipe(p1);

@@ -19,10 +19,10 @@ int main(int argc, char* argv[])
 
     for (auto i = 0; i < requestsNumber; ++i)
     {
-        operate(fildes1[1], QUERY_TEXT, write);
-        operate(fildes1[0], QUERY_TEXT, read);
-        operate(fildes2[1], RESPONSE_TEXT, write);
-        operate(fildes2[0], RESPONSE_TEXT, read);
+        operate(fildes1[1], QUERY_TEXT, write);    // Client send request
+        operate(fildes1[0], QUERY_TEXT, read);     // Server receive request
+        operate(fildes2[1], RESPONSE_TEXT, write); // Server send response
+        operate(fildes2[0], RESPONSE_TEXT, read);  // Client receive response
     }
 
     auto end = std::chrono::steady_clock::now();
