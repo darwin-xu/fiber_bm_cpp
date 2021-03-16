@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
 
     assert(requests_num % batches_num == 0);
 
-    auto [worker_read, worker_write, master_read, master_write] =
+    auto [worker_read, worker_write, client_read, client_write] =
         initPipes1(workers_num);
 
     // 2. Start evaluation
@@ -32,10 +32,10 @@ int main(int argc, char* argv[])
             worker_write[i]);
     }
 
-    ThreadVector masters;
+    ThreadVector clients;
     for (auto i = 0; i < workers_num; ++i)
     {
-        masters.emplace_back(
+        clients.emplace_back(
             [rn = requests_num, bn = batches_num](int rd, int wt) {
                 for (auto n = 0; n < rn / bn; ++n)
                 {
@@ -46,14 +46,14 @@ int main(int argc, char* argv[])
                     }
                 }
             },
-            master_read[i],
-            master_write[i]);
+            client_read[i],
+            client_write[i]);
     }
 
     for (auto& w : workers)
         w.join();
-    for (auto& m : masters)
-        m.join();
+    for (auto& c : clients)
+        c.join();
 
     auto end = std::chrono::steady_clock::now();
 

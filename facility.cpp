@@ -68,15 +68,15 @@ void printStat(const TP& start, const TP& end, double workload)
 }
 
 std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
-    int  workers_number,
+    int  workersNumber,
     bool nonblock)
 {
-    IntVector worker_read;
-    IntVector worker_write;
-    IntVector client_read;
-    IntVector client_write;
+    IntVector workerRead;
+    IntVector workerWrite;
+    IntVector clientRead;
+    IntVector clientWrite;
 
-    for (auto i = 0; i < workers_number; ++i)
+    for (auto i = 0; i < workersNumber; ++i)
     {
         int  p1[2], p2[2];
         auto r1 = pipe(p1);
@@ -92,27 +92,24 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
             setNonblock(p2[1]);
         }
 
-        worker_read.push_back(p1[0]);
-        client_write.push_back(p1[1]);
-        client_read.push_back(p2[0]);
-        worker_write.push_back(p2[1]);
+        workerRead.push_back(p1[0]);
+        workerWrite.push_back(p2[1]);
+        clientRead.push_back(p2[0]);
+        clientWrite.push_back(p1[1]);
     }
 
-    return std::make_tuple(worker_read,
-                           worker_write,
-                           client_read,
-                           client_write);
+    return std::make_tuple(workerRead, workerWrite, clientRead, clientWrite);
 }
 
 std::tuple<FdVector, FdVector, FdVector, FdVector>
-initPipes2(int workers_number, int requests_number, bool nonblock)
+initPipes2(int workersNumber, int requestsNumber, bool nonblock)
 {
-    FdVector worker_read;
-    FdVector worker_write;
-    FdVector client_read;
-    FdVector client_write;
+    FdVector workerRead;
+    FdVector workerWrite;
+    FdVector clientRead;
+    FdVector clientWrite;
 
-    for (auto i = 0; i < workers_number; ++i)
+    for (auto i = 0; i < workersNumber; ++i)
     {
         int  p1[2], p2[2];
         auto r1 = pipe(p1);
@@ -128,16 +125,16 @@ initPipes2(int workers_number, int requests_number, bool nonblock)
             setNonblock(p2[1]);
         }
 
-        worker_read.emplace_back(p1[0], requests_number, true);
-        client_write.emplace_back(p1[1], requests_number, false);
-        client_read.emplace_back(p2[0], requests_number, true);
-        worker_write.emplace_back(p2[1], requests_number, false);
+        workerRead.emplace_back(p1[0], requestsNumber, true);
+        workerWrite.emplace_back(p2[1], requestsNumber, false);
+        clientRead.emplace_back(p2[0], requestsNumber, true);
+        clientWrite.emplace_back(p1[1], requestsNumber, false);
     }
 
-    return std::make_tuple(std::move(worker_read),
-                           std::move(worker_write),
-                           std::move(client_read),
-                           std::move(client_write));
+    return std::make_tuple(std::move(workerRead),
+                           std::move(workerWrite),
+                           std::move(clientRead),
+                           std::move(clientWrite));
 }
 
 void setNonblock(int fd)
