@@ -4,24 +4,24 @@
 int main(int argc, char* argv[])
 {
     // 1. Preparation
-    auto [workers_num, requests_num, batches_num] =
+    auto [clientsNumber, requestsNumber, batchesNumber] =
         parseArg3(argc,
                   argv,
-                  "<workers number> <requests number> <batches number>");
+                  "<clients number> <requests number> <batches number>");
 
-    assert(requests_num % batches_num == 0);
+    assert(requestsNumber % batchesNumber == 0);
 
-    auto [worker_read, worker_write, master_read, master_write] =
-        initPipes1(workers_num);
+    auto [workerRead, workerWrite, clientRead, clientWrite] =
+        initPipes1(clientsNumber);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
-    std::thread wk([wn  = workers_num,
-                    rn  = requests_num,
-                    wrd = worker_read,
-                    wrt = worker_write] {
-        auto pendingItems = wn * rn;
+    std::thread wk([cn  = clientsNumber,
+                    rn  = requestsNumber,
+                    wrd = workerRead,
+                    wrt = workerWrite] {
+        auto pendingItems = cn * rn;
         while (pendingItems > 0)
         {
             auto [readable, writeable] = sselect(wrd, wrt);
@@ -35,15 +35,15 @@ int main(int argc, char* argv[])
         }
     });
 
-    std::thread mt([wn  = workers_num,
-                    rn  = requests_num,
-                    bn  = batches_num,
-                    mrd = master_read,
-                    mwt = master_write] {
-        auto pendingItems = wn * rn;
+    std::thread ct([cn  = clientsNumber,
+                    rn  = requestsNumber,
+                    bn  = batchesNumber,
+                    crd = clientRead,
+                    cwt = clientWrite] {
+        auto pendingItems = cn * rn;
         while (pendingItems > 0)
         {
-            auto [readable, writeable] = sselect(mrd, mwt);
+            auto [readable, writeable] = sselect(crd, cwt);
 
             for (int i = 0; i < bn; ++i)
             {
@@ -59,12 +59,12 @@ int main(int argc, char* argv[])
     });
 
     wk.join();
-    mt.join();
+    ct.join();
 
     auto end = std::chrono::steady_clock::now();
 
     // 3. Output statistics
-    printStat(start, end, static_cast<double>(workers_num * requests_num));
+    printStat(start, end, static_cast<double>(clientsNumber * requestsNumber));
 
     return 0;
 }

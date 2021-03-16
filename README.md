@@ -18,5 +18,6 @@ export CC=clang-6.0
 export CXX=clang++-6.0
 
 ## TODO list
-- [ ] Remove all the words of "master".
-- [ ] Change the words of "worker" into something more meaningful.
+- [x] Remove all the words of "master".
+- [x] Change the words of "worker" into something more meaningful.
+- [ ] Change the name from name_name into nameName.

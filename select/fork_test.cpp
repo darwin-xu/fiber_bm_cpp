@@ -4,26 +4,26 @@
 int main(int argc, char* argv[])
 {
     // 1. Preparation
-    auto [workers_num, requests_num] =
-        parseArg2(argc, argv, "<workers number> <requests number>");
+    auto [clientsNumber, requestsNumber] =
+        parseArg2(argc, argv, "<clients number> <requests number>");
 
-    auto [worker_read, worker_write, master_read, master_write] =
-        initPipes1(workers_num);
+    auto [workerRead, workerWrite, clientRead, clientWrite] =
+        initPipes1(clientsNumber);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
     PIDVector pv;
-    for (auto i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < clientsNumber; ++i)
     {
         auto pid = fork();
         assert(pid >= 0);
         if (pid == 0)
         {
-            for (auto n = 0; n < requests_num; ++n)
+            for (auto n = 0; n < requestsNumber; ++n)
             {
-                operate(worker_read[i], QUERY_TEXT, read);
-                operate(worker_write[i], RESPONSE_TEXT, write);
+                operate(workerRead[i], QUERY_TEXT, read);
+                operate(workerWrite[i], RESPONSE_TEXT, write);
             }
             exit(0);
         }
@@ -34,18 +34,18 @@ int main(int argc, char* argv[])
     }
 
     Int2IntMap pending_write_msgs;
-    for (auto i = 0; i < workers_num; ++i)
-        pending_write_msgs[i] = requests_num;
+    for (auto i = 0; i < clientsNumber; ++i)
+        pending_write_msgs[i] = requestsNumber;
     Int2IntMap pending_read_msgs = pending_write_msgs;
 
-    std::thread mt([wn  = workers_num,
-                    rn  = requests_num,
-                    mrd = master_read,
-                    mwt = master_write] {
-        auto pendingItems = wn * rn;
+    std::thread mt([cn  = clientsNumber,
+                    rn  = requestsNumber,
+                    crd = clientRead,
+                    cwt = clientWrite] {
+        auto pendingItems = cn * rn;
         while (pendingItems > 0)
         {
-            auto [readable, writeable] = sselect(mrd, mwt);
+            auto [readable, writeable] = sselect(crd, cwt);
 
             for (auto fd : readable)
                 operate(fd, RESPONSE_TEXT, read);
@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
     auto end = std::chrono::steady_clock::now();
 
     // 3. Output statistics
-    printStat(start, end, static_cast<double>(workers_num * requests_num));
+    printStat(start, end, static_cast<double>(clientsNumber * requestsNumber));
 
     return 0;
 }

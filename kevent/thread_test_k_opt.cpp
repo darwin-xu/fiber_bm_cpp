@@ -6,21 +6,21 @@
 int main(int argc, char* argv[])
 {
     // 1. Preparation
-    auto [workers_num, requests_num] =
-        parseArg2(argc, argv, "<workers number> <requests number>");
+    auto [clientsNumber, requestsNumber] =
+        parseArg2(argc, argv, "<clients number> <requests number>");
 
-    auto [worker_read, worker_write, master_read, master_write] =
-        initPipes2(workers_num, requests_num);
+    auto [workerRead, workerWrite, clientRead, clientWrite] =
+        initPipes2(clientsNumber, requestsNumber);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
-    Kq<FdObj>    kqMaster;
+    Kq<FdObj>    kqClient;
     ThreadVector workers;
-    for (auto i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < clientsNumber; ++i)
     {
-        kqMaster.regRead(master_read[i]);
-        kqMaster.regWrite(master_write[i]);
+        kqClient.regRead(clientRead[i]);
+        kqClient.regWrite(clientWrite[i]);
 
         workers.emplace_back(
             [](FdObj& fdoRead, FdObj& fdoWrite) {
@@ -46,11 +46,11 @@ int main(int argc, char* argv[])
                     }
                 }
             },
-            std::ref(worker_read[i]),
-            std::ref(worker_write[i]));
+            std::ref(workerRead[i]),
+            std::ref(workerWrite[i]));
     }
 
-    std::thread master([&kqMaster, &mwt = master_write] {
+    std::thread client([&kqClient, &mwt = clientWrite] {
         while (true)
         {
             if (std::find_if(mwt.begin(), mwt.end(), [](FdObj& fdo) -> bool {
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
                 }) == mwt.end())
                 break;
 
-            for (auto fdo : kqMaster.wait())
+            for (auto fdo : kqClient.wait())
             {
                 if (fdo->isRead())
                 {
@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
                     operate(fdo->getFd(), QUERY_TEXT, write);
                     if (--fdo->getCount() == 0)
                     {
-                        kqMaster.unreg(*fdo);
+                        kqClient.unreg(*fdo);
                     }
                 }
             }
@@ -78,12 +78,12 @@ int main(int argc, char* argv[])
 
     for (auto& w : workers)
         w.join();
-    master.join();
+    client.join();
 
     auto end = std::chrono::steady_clock::now();
 
     // 3. Output statistics
-    printStat(start, end, static_cast<double>(workers_num * requests_num));
+    printStat(start, end, static_cast<double>(clientsNumber * requestsNumber));
 
     return 0;
 }

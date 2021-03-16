@@ -10,38 +10,39 @@ using FiberVector = std::vector<boost::fibers::fiber>;
 int main(int argc, char* argv[])
 {
     // 1. Preparation
-    auto [workers_num, requests_num, threads_num, batches_num] = parseArg4(
-        argc,
-        argv,
-        "<workers number> <requests number> <threads number> <batches number>");
+    auto [clientsNumber, requestsNumber, threadsNumber, batchesNumber] =
+        parseArg4(argc,
+                  argv,
+                  "<clients number> <requests number> <threads number> "
+                  "<batches number>");
 
-    assert(requests_num % batches_num == 0);
+    assert(requestsNumber % batchesNumber == 0);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
     ThreadVector fiberThreads;
-    for (auto t = 0; t < threads_num; ++t)
+    for (auto t = 0; t < threadsNumber; ++t)
     {
         fiberThreads.emplace_back(
-            [t, wn = workers_num, rn = requests_num, bn = batches_num] {
-                auto [worker_read, worker_write, master_read, master_write] =
-                    initPipes2(wn, rn, true);
+            [t, cn = clientsNumber, rn = requestsNumber, bn = batchesNumber] {
+                auto [workerRead, workerWrite, clientRead, clientWrite] =
+                    initPipes2(cn, rn, true);
 
                 Kq<FdObj> kqWorker;
-                Kq<FdObj> kqMaster;
+                Kq<FdObj> kqClient;
 
-                auto workers_cnt = wn;
+                auto workersCount = cn;
 
                 FiberVector workerFibers;
-                for (auto i = 0; i < wn; ++i)
+                for (auto i = 0; i < cn; ++i)
                 {
-                    kqMaster.regRead(master_read[i]);
-                    kqMaster.regWrite(master_write[i]);
+                    kqClient.regRead(clientRead[i]);
+                    kqClient.regWrite(clientWrite[i]);
 
                     workerFibers.emplace_back(
-                        [rn, &workers_cnt, &kqWorker](FdObj& fdoRead,
-                                                      FdObj& fdoWrite) {
+                        [rn, &workersCount, &kqWorker](FdObj& fdoRead,
+                                                       FdObj& fdoWrite) {
                             for (auto n = 0; n < rn; ++n)
                             {
                                 operate(fdoRead.getFd(),
@@ -62,14 +63,14 @@ int main(int argc, char* argv[])
                                             kqWorker.unreg(fdoWrite);
                                         });
                             }
-                            --workers_cnt;
+                            --workersCount;
                         },
-                        std::ref(worker_read[i]),
-                        std::ref(worker_write[i]));
+                        std::ref(workerRead[i]),
+                        std::ref(workerWrite[i]));
                 }
 
-                boost::fibers::fiber reactorFiber([&workers_cnt, &kqWorker] {
-                    while (workers_cnt != 0)
+                boost::fibers::fiber reactorFiber([&workersCount, &kqWorker] {
+                    while (workersCount != 0)
                     {
                         for (auto fdo : kqWorker.wait())
                         {
@@ -79,10 +80,10 @@ int main(int argc, char* argv[])
                     }
                 });
 
-                std::thread master([&kqMaster, bn] {
+                std::thread client([&kqClient, bn] {
                     while (true)
                     {
-                        auto fdos = kqMaster.wait();
+                        auto fdos = kqClient.wait();
                         if (fdos.empty())
                             break;
                         for (auto fdo : fdos)
@@ -90,7 +91,7 @@ int main(int argc, char* argv[])
                             for (auto i = 0; i < bn; ++i)
                             {
                                 if (--fdo->getCount() == 0)
-                                    kqMaster.unreg(*fdo);
+                                    kqClient.unreg(*fdo);
 
                                 if (fdo->isRead())
                                     operate(fdo->getFd(), RESPONSE_TEXT, read);
@@ -104,7 +105,7 @@ int main(int argc, char* argv[])
                 for (auto& f : workerFibers)
                     f.join();
                 reactorFiber.join();
-                master.join();
+                client.join();
 
 #ifndef NDEBUG
                 std::locale our_local(std::cout.getloc(), new separated);
@@ -112,8 +113,8 @@ int main(int argc, char* argv[])
                 std::cout << "[" << std::setw(2) << t
                           << "]: kqWorker.wait = " << std::setw(9)
                           << kqWorker.getWaitCount()
-                          << " kqMaster.wait = " << std::setw(9)
-                          << kqMaster.getWaitCount() << std::endl;
+                          << " kqClient.wait = " << std::setw(9)
+                          << kqClient.getWaitCount() << std::endl;
 #endif
             });
     }
@@ -124,9 +125,10 @@ int main(int argc, char* argv[])
     auto end = std::chrono::steady_clock::now();
 
     // 3. Output statistics
-    printStat(start,
-              end,
-              static_cast<double>(workers_num * requests_num * threads_num));
+    printStat(
+        start,
+        end,
+        static_cast<double>(clientsNumber * requestsNumber * threadsNumber));
 
     return 0;
 }

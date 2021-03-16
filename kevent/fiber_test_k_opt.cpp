@@ -10,27 +10,27 @@ using FiberVector = std::vector<boost::fibers::fiber>;
 int main(int argc, char* argv[])
 {
     // 1. Preparation
-    auto [workers_num, requests_num] =
-        parseArg2(argc, argv, "<workers number> <requests number>");
+    auto [clientsNumber, requestsNumber] =
+        parseArg2(argc, argv, "<clients number> <requests number>");
 
-    auto [worker_read, worker_write, master_read, master_write] =
-        initPipes2(workers_num, requests_num, true);
+    auto [workerRead, workerWrite, clientRead, clientWrite] =
+        initPipes2(clientsNumber, requestsNumber, true);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
     Kq<FdObj>   kqWorker;
-    Kq<FdObj>   kqMaster;
-    auto        workers_cnt = workers_num;
+    Kq<FdObj>   kqClient;
+    auto        workersCount = clientsNumber;
     FiberVector workerFibers;
-    for (auto i = 0; i < workers_num; ++i)
+    for (auto i = 0; i < clientsNumber; ++i)
     {
-        kqMaster.regRead(master_read[i]);
-        kqMaster.regWrite(master_write[i]);
+        kqClient.regRead(clientRead[i]);
+        kqClient.regWrite(clientWrite[i]);
 
         workerFibers.emplace_back(
-            [rn = requests_num, &workers_cnt, &kqWorker](FdObj& fdoRead,
-                                                         FdObj& fdoWrite) {
+            [rn = requestsNumber, &workersCount, &kqWorker](FdObj& fdoRead,
+                                                            FdObj& fdoWrite) {
                 for (auto n = 0; n < rn; ++n)
                 {
                     operate(fdoRead.getFd(),
@@ -51,14 +51,14 @@ int main(int argc, char* argv[])
                                 kqWorker.unreg(fdoWrite);
                             });
                 }
-                --workers_cnt;
+                --workersCount;
             },
-            std::ref(worker_read[i]),
-            std::ref(worker_write[i]));
+            std::ref(workerRead[i]),
+            std::ref(workerWrite[i]));
     }
 
-    boost::fibers::fiber reactorFiber([&workers_cnt, &kqWorker] {
-        while (workers_cnt != 0)
+    boost::fibers::fiber reactorFiber([&workersCount, &kqWorker] {
+        while (workersCount != 0)
         {
             for (auto fdo : kqWorker.wait())
             {
@@ -68,16 +68,16 @@ int main(int argc, char* argv[])
         }
     });
 
-    std::thread master([&kqMaster] {
+    std::thread client([&kqClient] {
         while (true)
         {
-            auto fdos = kqMaster.wait();
+            auto fdos = kqClient.wait();
             if (fdos.empty())
                 break;
             for (auto fdo : fdos)
             {
                 if (--fdo->getCount() == 0)
-                    kqMaster.unreg(*fdo);
+                    kqClient.unreg(*fdo);
 
                 if (fdo->isRead())
                     operate(fdo->getFd(), RESPONSE_TEXT, read);
@@ -90,12 +90,12 @@ int main(int argc, char* argv[])
     for (auto& f : workerFibers)
         f.join();
     reactorFiber.join();
-    master.join();
+    client.join();
 
     auto end = std::chrono::steady_clock::now();
 
     // 3. Output statistics
-    printStat(start, end, static_cast<double>(workers_num * requests_num));
+    printStat(start, end, static_cast<double>(clientsNumber * requestsNumber));
 
     return 0;
 }
