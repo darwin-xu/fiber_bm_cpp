@@ -1,5 +1,5 @@
-#ifndef FDOBJ
-#define FDOBJ
+#ifndef FDOBJ_H
+#define FDOBJ_H
 
 #include <vector>
 #include <memory>
@@ -40,4 +40,4 @@ private:
 
 using FdVector = std::vector<FdObj>;
 
-#endif // FDOBJ
+#endif // FDOBJ_H
