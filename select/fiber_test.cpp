@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
         }
     });
 
-    std::thread mt([cn  = clientsNumber,
+    std::thread ct([cn  = clientsNumber,
                     rn  = requestsNumber,
                     crd = clientRead,
                     cwt = clientWrite] {
@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
         f.join();
     reactorFiber.join();
 
-    mt.join();
+    ct.join();
 
     auto end = std::chrono::steady_clock::now();
 
