@@ -4,7 +4,7 @@
 #include <vector>
 #include <set>
 
-#ifdef MACOS
+#if defined(MACOS) || defined(FREEBSD)
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
@@ -21,7 +21,7 @@ public:
 
     void regRead(T& t)
     {
-#ifdef MACOS
+#if defined(MACOS) || defined(FREEBSD)
         reg(t, EVFILT_READ);
 #endif
 #ifdef LINUX
@@ -31,7 +31,7 @@ public:
 
     void regWrite(T& t)
     {
-#ifdef MACOS
+#if defined(MACOS) || defined(FREEBSD)
         reg(t, EVFILT_WRITE);
 #endif
 #ifdef LINUX
@@ -42,7 +42,7 @@ public:
     void unreg(T& t)
     {
         fdSet.erase(t.getFd());
-#ifdef MACOS
+#if defined(MACOS) || defined(FREEBSD)
         struct kevent event;
         EV_SET(&event,
                t.getFd(),
@@ -73,7 +73,7 @@ public:
         constexpr int EVENT_SIZE = 1024;
         if (!fdSet.empty())
         {
-#ifdef MACOS
+#if defined(MACOS) || defined(FREEBSD)
             struct kevent events[EVENT_SIZE];
             auto          e = kevent(_kq, NULL, 0, events, EVENT_SIZE, NULL);
             assert(e != -1);
@@ -102,7 +102,7 @@ private:
     void reg(T& t, int filter)
     {
         fdSet.insert(t.getFd());
-#ifdef MACOS
+#if defined(MACOS) || defined(FREEBSD)
         struct kevent event;
         EV_SET(&event, t.getFd(), filter, EV_ADD | EV_CLEAR, 0, 0, &t);
         auto r = kevent(_kq, &event, 1, NULL, 0, NULL);
@@ -117,7 +117,7 @@ private:
 #endif
     }
 
-#ifdef MACOS
+#if defined(MACOS) || defined(FREEBSD)
     int _kq = kqueue();
 #endif
 #ifdef LINUX
