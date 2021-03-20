@@ -4,8 +4,10 @@
 - macOS
 - ubuntu
 - FreeBSD
+- OneFS
 
 ## Dependency
+- CMake 3.19.2, (Supporting of C++17 is mandatory)
 - Boost 1.73 or later (earlier versions might work but I haven't tested it), build it with: b2 --with-fiber
 
 ## Building Instructions
