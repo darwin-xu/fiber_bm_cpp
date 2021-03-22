@@ -52,14 +52,14 @@ public:
                0,
                &t);
         auto r = kevent(_kq, &event, 1, NULL, 0, NULL);
-        assert(r != -1);
+        assert(r != -1 && "kevent() function fails.");
 #endif
 #ifdef LINUX
         struct epoll_event event;
         event.events   = EPOLLIN | EPOLLOUT;
         event.data.ptr = &t;
         auto r         = epoll_ctl(_ep, EPOLL_CTL_DEL, t.getFd(), &event);
-        assert(r != -1);
+        assert(r != -1 && "epoll_ctl() function fails.");
 #endif
     }
 
@@ -76,14 +76,14 @@ public:
 #if defined(MACOS) || defined(FREEBSD)
             struct kevent events[EVENT_SIZE];
             auto          e = kevent(_kq, NULL, 0, events, EVENT_SIZE, NULL);
-            assert(e != -1);
+            assert(e != -1 && "kevent() function fails.");
             for (auto i = 0; i < e; ++i)
                 tv.push_back(reinterpret_cast<T*>(events[i].udata));
 #endif
 #ifdef LINUX
             struct epoll_event events[EVENT_SIZE];
             auto               e = epoll_wait(_ep, events, EVENT_SIZE, -1);
-            assert(e != -1);
+            assert(e != -1 && "epoll_wait() function fails.");
             for (auto i = 0; i < e; ++i)
                 tv.push_back(reinterpret_cast<T*>(events[i].data.ptr));
 #endif
@@ -106,14 +106,14 @@ private:
         struct kevent event;
         EV_SET(&event, t.getFd(), filter, EV_ADD | EV_CLEAR, 0, 0, &t);
         auto r = kevent(_kq, &event, 1, NULL, 0, NULL);
-        assert(r != -1);
+        assert(r != -1 && "kevent() function fails.");
 #endif
 #ifdef LINUX
         struct epoll_event event;
         event.events   = filter;
         event.data.ptr = &t;
         auto r         = epoll_ctl(_ep, EPOLL_CTL_ADD, t.getFd(), &event);
-        assert(r != -1);
+        assert(r != -1 && "epoll_ctl() function fails.");
 #endif
     }
 

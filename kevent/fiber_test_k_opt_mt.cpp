@@ -16,7 +16,8 @@ int main(int argc, char* argv[])
                   "<clients number> <requests number> <threads number> "
                   "<batches number>");
 
-    assert(requestsNumber % batchesNumber == 0);
+    assert(requestsNumber % batchesNumber == 0 &&
+           "requests number should be divisible by batches number");
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();

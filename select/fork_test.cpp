@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
     for (auto i = 0; i < clientsNumber; ++i)
     {
         auto pid = fork();
-        assert(pid >= 0);
+        assert(pid >= 0 && "fork() function fails");
         if (pid == 0)
         {
             for (auto n = 0; n < requestsNumber; ++n)

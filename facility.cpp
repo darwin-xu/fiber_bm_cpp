@@ -31,7 +31,7 @@ std::pair<IntVector, IntVector> sselect(const IntVector& rds,
     timeout.tv_usec = 1000;
 
     auto s = select(FD_SETSIZE, &rdSet, &wtSet, NULL, &timeout);
-    assert(s != -1);
+    assert(s != -1 && "select() function fails.");
 
     auto getFD_SET = [](const IntVector& fds, const fd_set& set) -> IntVector {
         IntVector retSet;
@@ -73,9 +73,9 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
     {
         int  p1[2], p2[2];
         auto r1 = pipe(p1);
-        assert(r1 == 0);
+        assert(r1 == 0 && "Maybe too many opened files.");
         auto r2 = pipe(p2);
-        assert(r2 == 0);
+        assert(r2 == 0 && "Maybe too many opened files.");
 
         if (nonblock)
         {
@@ -106,9 +106,9 @@ initPipes2(int pipesNumber, int requestsNumber, bool nonblock)
     {
         int  p1[2], p2[2];
         auto r1 = pipe(p1);
-        assert(r1 == 0);
+        assert(r1 == 0 && "Maybe too many opened files.");
         auto r2 = pipe(p2);
-        assert(r2 == 0);
+        assert(r2 == 0 && "Maybe too many opened files.");
 
         if (nonblock)
         {
@@ -133,9 +133,9 @@ initPipes2(int pipesNumber, int requestsNumber, bool nonblock)
 void setNonblock(int fd)
 {
     int flags = fcntl(fd, F_GETFL, 0);
-    assert(flags != -1);
+    assert(flags != -1 && "fcntl() function fails.");
     int r = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-    assert(r != -1);
+    assert(r != -1 && "fcntl() function fails.");
 }
 
 auto checkArgCount =

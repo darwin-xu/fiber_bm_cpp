@@ -54,7 +54,7 @@ void operate(
             if (errno == EAGAIN)
                 yieldAt();
             else
-                assert(false);
+                assert(false && "read() or write() function fails.");
         }
     } while (remain != 0);
 }

@@ -9,10 +9,10 @@ int main(int argc, char* argv[])
 
     int  fildes1[2];
     auto r1 = pipe(fildes1);
-    assert(r1 == 0);
+    assert(r1 == 0 && "Maybe too many opened files.");
     int  fildes2[2];
     auto r2 = pipe(fildes2);
-    assert(r2 == 0);
+    assert(r2 == 0 && "Maybe too many opened files.");
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();

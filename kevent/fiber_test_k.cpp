@@ -79,8 +79,8 @@ int main(int argc, char* argv[])
         }
     });
 
-    for (auto& f : workerFibers)
-        f.join();
+    for (auto& wf : workerFibers)
+        wf.join();
     reactorFiber.join();
     client.join();
 

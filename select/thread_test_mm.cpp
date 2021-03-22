@@ -9,7 +9,8 @@ int main(int argc, char* argv[])
                   argv,
                   "<clients number> <requests number> <batches number>");
 
-    assert(requestsNumber % batchesNumber == 0);
+    assert(requestsNumber % batchesNumber == 0 &&
+           "requests number should be divisible by batches number");
 
     auto [workerRead, workerWrite, clientRead, clientWrite] =
         initPipes1(clientsNumber);

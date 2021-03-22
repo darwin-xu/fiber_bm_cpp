@@ -120,12 +120,12 @@ int main(int argc, char* argv[])
             auto [readable, writeable] = sselect(crd, cwt);
 
             for (auto fd : readable)
-                operate(fd, RESPONSE_TEXT, read);
-            for (auto fd : writeable)
             {
-                operate(fd, QUERY_TEXT, write);
+                operate(fd, RESPONSE_TEXT, read);
                 --pendingItems;
             }
+            for (auto fd : writeable)
+                operate(fd, QUERY_TEXT, write);
         }
     });
 
