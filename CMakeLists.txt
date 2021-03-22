@@ -28,7 +28,9 @@ else()
     message(FATAL_ERROR "Platform  \"${CMAKE_SYSTEM_NAME}\" cannot be recognized.")
 endif()
 
-add_compile_options(-Wall -Wextra -pedantic)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_options(-Wall -Wextra -pedantic)
+endif()
 
 add_library(fiber_bm facility.cpp FdObj.cpp)
 

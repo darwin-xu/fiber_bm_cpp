@@ -2,7 +2,7 @@
 #define KQ_H
 
 #include <vector>
-#include <set>
+#include <unordered_set>
 
 #if defined(MACOS) || defined(FREEBSD)
 #include <sys/types.h>
@@ -123,7 +123,7 @@ private:
 #ifdef LINUX
     int _ep = epoll_create(1);
 #endif
-    std::set<int> fdSet;
+    std::unordered_set<int> fdSet;
 
 #ifndef NDEBUG
     long _waitCount = 0;
