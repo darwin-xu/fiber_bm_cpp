@@ -26,3 +26,6 @@ export CXX=clang++-6.0
 - [x] Remove all the words of "master". (Not because of racism, but because it cannot indicate the correct concept)
 - [x] Change the words of "worker" in the program arguments into something more meaningful.
 - [x] Change the name from name_name into nameName.
+- [ ] The release version was optimized too much, couldn't get a reasonable result.
+- [ ] fiber_test.cpp cores at `./fiber_test 500 10`.
+- [ ] Visual studio code seems doesn't support passing variables to CMake by using "cmake.buildEnvironment", use "Configure Args" instead.

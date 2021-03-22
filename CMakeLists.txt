@@ -1,11 +1,8 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(fiber_bm_cpp VERSION 0.1.0)
 
-# Some system doesn't have the latest CMake which supports C++17
-# set(CMAKE_CXX_STANDARD 17)
-
-include_directories(../../../boost_1_75_0/)
-link_directories(../../../boost_1_75_0/stage/lib)
+include_directories("${BOOST_PATH}")
+link_directories("${BOOST_PATH}/stage/lib")
 
 link_libraries(boost_context)
 link_libraries(pthread)
@@ -13,18 +10,25 @@ link_libraries(boost_fiber)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     message(STATUS "Platform is macOS")
+    set(CMAKE_CXX_STANDARD 17)
     add_definitions(-DMACOS)
-elseif (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR CMAKE_SYSTEM_NAME STREQUAL "Isilon OneFS")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     message(STATUS "Platform is FreeBSD")
+    set(CMAKE_CXX_STANDARD 17)
+    add_definitions(-DFREEBSD)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Isilon OneFS")
+    # OneFS's CMake doesn't support C++17 yet
+    add_compile_options(-std=c++17)
     add_definitions(-DFREEBSD)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message(STATUS "Platform is Linux")
+    set(CMAKE_CXX_STANDARD 17)
     add_definitions(-DLINUX)
 else()
     message(FATAL_ERROR "Platform  \"${CMAKE_SYSTEM_NAME}\" cannot be recognized.")
 endif()
 
-add_compile_options(-Wall -Wextra -pedantic -std=c++17)
+add_compile_options(-Wall -Wextra -pedantic)
 
 add_library(fiber_bm facility.cpp FdObj.cpp)
 
