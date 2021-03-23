@@ -34,21 +34,32 @@ int main(int argc, char* argv[])
     }
 
     // "Captureing with the initializer" is a workaround.
-    std::thread ct([cn  = clientsNumber,
-                    rn  = requestsNumber,
-                    crd = clientRead,
-                    cwt = clientWrite] {
-        auto pendingItems = cn * rn;
-        while (pendingItems > 0)
+    std::thread ct([rn = requestsNumber, crd = clientRead, cwt = clientWrite] {
+        Int2IntMap pendingRead;
+        Int2IntMap pendingWrite;
+
+        for (auto fd : crd)
+            pendingRead[fd] = rn;
+        for (auto fd : cwt)
+            pendingWrite[fd] = rn;
+
+        while (!pendingRead.empty())
         {
             auto [readable, writeable] = sselect(crd, cwt);
 
             for (auto fd : readable)
+            {
                 operate(fd, RESPONSE_TEXT, read);
+                if (--pendingRead[fd] == 0)
+                    pendingRead.erase(fd);
+            }
             for (auto fd : writeable)
             {
-                operate(fd, QUERY_TEXT, write);
-                --pendingItems;
+                if (pendingWrite[fd] > 0)
+                {
+                    --pendingWrite[fd];
+                    operate(fd, QUERY_TEXT, write);
+                }
             }
         }
     });

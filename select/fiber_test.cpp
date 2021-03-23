@@ -5,7 +5,7 @@
 
 class Flag;
 
-using Int2FlagMap = std::map<int, Flag*>;
+using Int2FlagMap = std::unordered_map<int, Flag*>;
 
 class Flag
 {
