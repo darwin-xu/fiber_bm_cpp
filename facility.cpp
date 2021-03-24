@@ -46,18 +46,26 @@ std::pair<IntVector, IntVector> sselect(const IntVector& rds,
     return std::make_pair(getFD_SET(rds, rdSet), getFD_SET(wts, wtSet));
 }
 
-void printStat(const TP& start, const TP& end, double workload)
+void printStat(double workload, const TP& start, const TPVector& end)
 {
-    auto elapsed_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
-            .count();
-
     std::locale our_local(std::cout.getloc(), new separated);
     std::cout.imbue(our_local);
-    std::cout << "Elapsed time(ms)       : " << elapsed_ms << std::endl;
+
+    std::vector<long> durations;
+    long              total = 0;
+    for (auto& e : end)
+    {
+        auto duration =
+            std::chrono::duration_cast<std::chrono::milliseconds>(e - start)
+                .count();
+        std::cout << "Elapsed time(ms)       : " << duration << std::endl;
+        durations.push_back(duration);
+        total += duration;
+    }
+
+    std::cout << "Total time(ms)         : " << total << std::endl;
     std::cout << "Transactions per second: " << std::fixed
-              << std::setprecision(0) << workload * 1000 / elapsed_ms
-              << std::endl;
+              << std::setprecision(0) << workload * 1000 / total << std::endl;
 }
 
 std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(

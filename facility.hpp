@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <iostream>
 #include <tuple>
+#include <future>
 
 #include <string.h>
 #include <assert.h>
@@ -64,7 +65,9 @@ std::pair<IntVector, IntVector> sselect(const IntVector& rds,
 
 using TP = decltype(std::chrono::steady_clock::now());
 
-void printStat(const TP& start, const TP& end, double workload);
+using TPVector = std::vector<TP>;
+
+void printStat(double workload, const TP& start, const TPVector& end);
 
 std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
     int  pipesNumber,

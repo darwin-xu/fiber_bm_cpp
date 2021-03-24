@@ -30,3 +30,4 @@ export CXX=clang++-6.0
 - [x] fiber_test.cpp cores at `./fiber_test 500 10`. (no fix, FD_SETSIZE is 1024)
 - [x] Visual studio code seems doesn't support passing variables to CMake by using "cmake.buildEnvironment", use "Configure Args" instead.
 - [ ] fiber_test.cpp and fiber_test_k.cpp isn't balance.
+- [ ] batchesNumber of thread_test_mm.cpp is not processed correctly.
