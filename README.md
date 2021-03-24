@@ -31,3 +31,4 @@ export CXX=clang++-6.0
 - [x] Visual studio code seems doesn't support passing variables to CMake by using "cmake.buildEnvironment", use "Configure Args" instead.
 - [ ] fiber_test.cpp and fiber_test_k.cpp isn't balance.
 - [ ] batchesNumber of thread_test_mm.cpp is not processed correctly.
+- [ ] Support more accurate time point for each thread.

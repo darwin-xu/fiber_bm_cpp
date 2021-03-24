@@ -1,5 +1,6 @@
 #include <utility>
 #include <iostream>
+#include <iomanip>
 
 #include <unistd.h>
 
@@ -46,25 +47,27 @@ std::pair<IntVector, IntVector> sselect(const IntVector& rds,
     return std::make_pair(getFD_SET(rds, rdSet), getFD_SET(wts, wtSet));
 }
 
-void printStat(double workload, const TP& start, const TPVector& end)
+void printStat(double workload, const TP& start, const STPVector& ends)
 {
     std::locale our_local(std::cout.getloc(), new separated);
     std::cout.imbue(our_local);
 
     std::vector<long> durations;
     long              total = 0;
-    for (auto& e : end)
+    for (auto& e : ends)
     {
         auto duration =
-            std::chrono::duration_cast<std::chrono::milliseconds>(e - start)
+            std::chrono::duration_cast<std::chrono::milliseconds>(e.end - start)
                 .count();
-        std::cout << "Elapsed time(ms)       : " << duration << std::endl;
+        std::cout << "Elapsed time (" << std::left << std::setw(8) << e.name
+                  << "): " << duration << " ms" << std::endl;
         durations.push_back(duration);
-        total += duration;
+        if (duration > total)
+            total = duration;
     }
 
-    std::cout << "Total time(ms)         : " << total << std::endl;
-    std::cout << "Transactions per second: " << std::fixed
+    std::cout << "Total time             : " << total << " ms" << std::endl;
+    std::cout << "Transactions Per Second: " << std::fixed
               << std::setprecision(0) << workload * 1000 / total << std::endl;
 }
 

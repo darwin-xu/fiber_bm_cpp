@@ -18,10 +18,10 @@ int main(int argc, char* argv[])
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
-    std::thread wk([cn  = clientsNumber,
-                    rn  = requestsNumber,
-                    wrd = workerRead,
-                    wrt = workerWrite] {
+    auto worker = [cn  = clientsNumber,
+                   rn  = requestsNumber,
+                   wrd = workerRead,
+                   wrt = workerWrite] {
         auto pendingItems = cn * rn;
         while (pendingItems > 0)
         {
@@ -34,38 +34,52 @@ int main(int argc, char* argv[])
             for (auto fd : writeable)
                 operate(fd, RESPONSE_TEXT, write);
         }
-    });
+        return std::chrono::steady_clock::now();
+    };
+    auto wf = std::async(std::launch::async, worker);
 
-    std::thread ct([cn  = clientsNumber,
-                    rn  = requestsNumber,
-                    bn  = batchesNumber,
-                    crd = clientRead,
-                    cwt = clientWrite] {
-        auto pendingItems = cn * rn;
-        while (pendingItems > 0)
+    auto client = [cn  = clientsNumber,
+                   rn  = requestsNumber,
+                   bn  = batchesNumber,
+                   crd = clientRead,
+                   cwt = clientWrite] {
+        Int2IntMap pendingRead;
+        Int2IntMap pendingWrite;
+        for (auto fd : crd)
+            pendingRead[fd] = rn;
+        for (auto fd : cwt)
+            pendingWrite[fd] = rn;
+
+        while (!pendingRead.empty())
         {
             auto [readable, writeable] = sselect(crd, cwt);
 
-            for (int i = 0; i < bn; ++i)
+            for (auto fd : readable)
             {
-                for (auto fd : readable)
-                    operate(fd, RESPONSE_TEXT, read);
-                for (auto fd : writeable)
+                operate(fd, RESPONSE_TEXT, read);
+                if (--pendingRead[fd] == 0)
+                    pendingRead.erase(fd);
+            }
+            for (auto fd : writeable)
+            {
+                if (pendingWrite[fd] > 0)
                 {
-                    operate(fd, QUERY_TEXT, write);
-                    --pendingItems;
+                    for (int i = 0; i < bn; ++i)
+                    {
+                        --pendingWrite[fd];
+                        operate(fd, QUERY_TEXT, write);
+                    }
                 }
             }
         }
-    });
-
-    wk.join();
-    ct.join();
-
-    auto end = std::chrono::steady_clock::now();
+        return std::chrono::steady_clock::now();
+    };
+    auto cf = std::async(std::launch::async, client);
 
     // 3. Output statistics
-    printStat(start, end, clientsNumber * requestsNumber);
+    printStat(clientsNumber * requestsNumber,
+              start,
+              {{"worker", wf.get()}, {"client", cf.get()}});
 
     return 0;
 }

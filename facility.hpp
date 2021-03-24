@@ -32,7 +32,7 @@ extern std::string QUERY_TEXT;
 extern std::string RESPONSE_TEXT;
 
 template<class Action, class YieldAt = void (*)(void)>
-void operate(
+bool operate(
     int          fd,
     std::string& str,
     Action&&     rw,
@@ -45,29 +45,51 @@ void operate(
     size_t remain = str.length();
     do
     {
-        if (int r = rw(fd, buf, remain); r != -1)
+        // C++17: if statement with initializer
+        // https://en.cppreference.com/w/cpp/language/if
+        if (int r = rw(fd, buf, remain); r > 0)
         {
             buf += r;
             remain -= r;
         }
-        else
+        else if (r == -1)
         {
             if (errno == EAGAIN)
                 yieldAt();
             else
                 assert(false && "read() or write() function fails.");
         }
+        else if (r == 0)
+            return false;
     } while (remain != 0);
+    return true;
 }
 
 std::pair<IntVector, IntVector> sselect(const IntVector& rds,
                                         const IntVector& wts);
 
 using TP = decltype(std::chrono::steady_clock::now());
+struct StrTP
+{
+    // Although initialization list doesn't need it.
+    // The vector::emplace_back() still needs it.
+    // This can go away in the future:
+    // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p0960r3.html
+    StrTP(const std::string& name, const TP& end)
+        : name(name)
+        , end(end)
+    {
+    }
 
-using TPVector = std::vector<TP>;
+    std::string name;
+    TP          end;
+};
 
-void printStat(double workload, const TP& start, const TPVector& end);
+using STPVector      = std::vector<StrTP>;
+using TPFuture       = std::future<TP>;
+using TPFutureVector = std::vector<TPFuture>;
+
+void printStat(double workload, const TP& start, const STPVector& ends);
 
 std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
     int  pipesNumber,
