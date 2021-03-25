@@ -41,10 +41,9 @@ int main(int argc, char* argv[])
                 for (auto n = 0; n < rn / bn; ++n)
                 {
                     for (int j = 0; j < bn; ++j)
-                    {
                         operate(wt, QUERY_TEXT, write);
+                    for (int j = 0; j < bn; ++j)
                         operate(rd, RESPONSE_TEXT, read);
-                    }
                 }
             },
             clientRead[i],
@@ -59,7 +58,7 @@ int main(int argc, char* argv[])
     auto end = std::chrono::steady_clock::now();
 
     // 3. Output statistics
-    printStat(start, end, clientsNumber * requestsNumber);
+    printStat(clientsNumber * requestsNumber, start, end);
 
     return 0;
 }

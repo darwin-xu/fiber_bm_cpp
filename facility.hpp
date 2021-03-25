@@ -85,11 +85,9 @@ struct StrTP
     TP          end;
 };
 
-using STPVector      = std::vector<StrTP>;
-using TPFuture       = std::future<TP>;
-using TPFutureVector = std::vector<TPFuture>;
+using STPVector = std::vector<StrTP>;
 
-void printStat(double workload, const TP& start, const STPVector& ends);
+void printStat(double workload, const TP& start, const TP& end);
 
 std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
     int  pipesNumber,
@@ -116,5 +114,10 @@ std::tuple<int, int, int> parseArg3(int                argc,
 std::tuple<int, int, int, int> parseArg4(int                argc,
                                          char*              argv[],
                                          const std::string& prompt);
+
+inline void removeFD(IntVector& iv, int fd)
+{
+    iv.erase(std::remove(iv.begin(), iv.end(), fd), iv.end());
+}
 
 #endif // FACILITY_H

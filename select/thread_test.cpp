@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
-    TPFutureVector wfs;
+    ThreadVector workers;
     for (auto i = 0; i < clientsNumber; ++i)
     {
         // Using something like this will cause compile error:
@@ -22,25 +22,22 @@ int main(int argc, char* argv[])
         // it is an issue of C++ std:
         // http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#2313
         // https://stackoverflow.com/questions/46114214/lambda-implicit-capture-fails-with-variable-declared-from-structured-binding
-        auto worker = [](int rd, int wt) {
-            while (true)
-            {
-                if (!operate(rd, QUERY_TEXT, read))
-                    break;
-                operate(wt, RESPONSE_TEXT, write);
-            }
-            close(rd);
-            close(wt);
-
-            return std::chrono::steady_clock::now();
-        };
-        wfs.push_back(std::async(std::launch::async,
-                                 worker,
-                                 workerRead[i],
-                                 workerWrite[i]));
+        workers.emplace_back(
+            [](int rd, int wt) {
+                while (true)
+                {
+                    if (!operate(rd, QUERY_TEXT, read))
+                        break;
+                    operate(wt, RESPONSE_TEXT, write);
+                }
+                close(rd);
+                close(wt);
+            },
+            workerRead[i],
+            workerWrite[i]);
     }
 
-    auto client =
+    std::thread client(
         [rn = requestsNumber, rds = clientRead, wts = clientWrite]() mutable {
             Int2IntMap pendingWrite;
             for (auto fd : wts)
@@ -49,10 +46,6 @@ int main(int argc, char* argv[])
             while (!rds.empty())
             {
                 auto [readable, writeable] = sselect(rds, wts);
-
-                auto removeFD = [](IntVector& iv, int fd) {
-                    iv.erase(std::remove(iv.begin(), iv.end(), fd), iv.end());
-                };
 
                 for (auto fd : readable)
                 {
@@ -71,17 +64,16 @@ int main(int argc, char* argv[])
             }
 
             return std::chrono::steady_clock::now();
-        };
-    auto cf = std::async(std::launch::async, client);
+        });
 
-    STPVector stpv;
-    for (auto& wf : wfs)
-        stpv.emplace_back("worker", wf.get());
+    for (auto& w : workers)
+        w.join();
+    client.join();
 
-    stpv.emplace_back("client", cf.get());
+    auto end = std::chrono::steady_clock::now();
 
     // 3. Output statistics
-    printStat(clientsNumber * requestsNumber, start, stpv);
+    printStat(clientsNumber * requestsNumber, start, end);
 
     return 0;
 }

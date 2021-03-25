@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
     auto end = std::chrono::steady_clock::now();
 
     // 3. Output statistics
-    printStat(start, end, clientNumber * requestsNumber * threadsNumber);
+    printStat(clientNumber * requestsNumber * threadsNumber, start, end);
 
     return 0;
 }

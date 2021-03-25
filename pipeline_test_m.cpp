@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
-    auto worker = [rd = fildes2[0], wt = fildes1[1]]() {
+    std::thread worker([rd = fildes2[0], wt = fildes1[1]]() {
         while (true)
         {
             if (!operate(rd, QUERY_TEXT, read))
@@ -35,13 +35,12 @@ int main(int argc, char* argv[])
         }
 
         return std::chrono::steady_clock::now();
-    };
-    auto wf = std::async(std::launch::async, worker);
+    });
 
-    auto client = [rn = requestsNumber,
-                   bn = batchesNumber,
-                   rd = fildes1[0],
-                   wt = fildes2[1]]() {
+    std::thread client([rn = requestsNumber,
+                        bn = batchesNumber,
+                        rd = fildes1[0],
+                        wt = fildes2[1]] {
         for (auto i = 0; i < rn / bn; ++i)
         {
             for (auto b = 0; b < bn; ++b)
@@ -53,13 +52,15 @@ int main(int argc, char* argv[])
         close(wt);
 
         return std::chrono::steady_clock::now();
-    };
-    auto cf = std::async(std::launch::async, client);
+    });
+
+    worker.join();
+    client.join();
+
+    auto end = std::chrono::steady_clock::now();
 
     // 3. Output statistics
-    printStat(requestsNumber,
-              start,
-              {{"worker", wf.get()}, {"client", cf.get()}});
+    printStat(requestsNumber, start, end);
 
     return 0;
 }
