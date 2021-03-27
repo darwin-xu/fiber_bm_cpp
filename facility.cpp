@@ -59,6 +59,8 @@ void printStat(double workload, const TP& start, const TP& end)
     std::cout << "Transactions Per Second: " << std::fixed
               << std::setprecision(0) << workload * 1000 / duration
               << std::endl;
+    std::cout << "Yield counts           : " << FdObj::getYieldCount()
+              << std::endl;
 }
 
 std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(

@@ -1,5 +1,7 @@
 #include "FdObj.hpp"
 
+std::atomic_long FdObj::_yieldCount;
+
 FdObj::FdObj(int fd, int count, bool read)
     : _fd(fd)
     , _count(count)
@@ -29,6 +31,12 @@ void FdObj::resume()
 
 void FdObj::yield()
 {
+    ++_yieldCount;
     _promise = std::make_unique<boost::fibers::promise<int>>();
     _promise->get_future().get();
+}
+
+long FdObj::getYieldCount()
+{
+    return _yieldCount.load();
 }

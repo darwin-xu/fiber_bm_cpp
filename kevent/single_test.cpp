@@ -20,10 +20,10 @@ int main(int argc, char* argv[])
 
     for (auto i = 0; i < clientsNumber; ++i)
     {
-        kqClient.regRead(clientRead[i]);
-        kqClient.regWrite(clientWrite[i]);
-        kqWorker.regRead(workerRead[i]);
-        kqWorker.regWrite(workerWrite[i]);
+        kqClient.reg(clientRead[i]);
+        kqClient.reg(clientWrite[i]);
+        kqWorker.reg(workerRead[i]);
+        kqWorker.reg(workerWrite[i]);
     }
 
     std::thread client([&kqClient, &cw = clientWrite] {

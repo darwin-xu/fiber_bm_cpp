@@ -19,14 +19,14 @@ int main(int argc, char* argv[])
     ThreadVector workers;
     for (auto i = 0; i < clientsNumber; ++i)
     {
-        kqClient.regRead(clientRead[i]);
-        kqClient.regWrite(clientWrite[i]);
+        kqClient.reg(clientRead[i]);
+        kqClient.reg(clientWrite[i]);
 
         workers.emplace_back(
             [](FdObj& fdoRead, FdObj& fdoWrite) {
                 Kq<FdObj> kq;
-                kq.regRead(fdoRead);
-                kq.regWrite(fdoWrite);
+                kq.reg(fdoRead);
+                kq.reg(fdoWrite);
 
                 while (true)
                 {

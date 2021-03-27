@@ -19,24 +19,26 @@ class Kq
 public:
     using TVector = std::vector<T*>;
 
-    void regRead(T& t)
+    void reg(T& t)
     {
+        if (t.isRead())
+        {
 #if defined(MACOS) || defined(FREEBSD)
-        reg(t, EVFILT_READ);
+            reg(t, EVFILT_READ);
 #endif
 #ifdef LINUX
-        reg(t, EPOLLIN);
+            reg(t, EPOLLIN);
 #endif
-    }
-
-    void regWrite(T& t)
-    {
+        }
+        else
+        {
 #if defined(MACOS) || defined(FREEBSD)
-        reg(t, EVFILT_WRITE);
+            reg(t, EVFILT_WRITE);
 #endif
 #ifdef LINUX
-        reg(t, EPOLLOUT);
+            reg(t, EPOLLOUT);
 #endif
+        }
     }
 
     void unreg(T& t)

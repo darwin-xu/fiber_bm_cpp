@@ -19,8 +19,8 @@ int main(int argc, char* argv[])
     ThreadVector workers;
     for (auto i = 0; i < clientsNumber; ++i)
     {
-        kq.regRead(clientRead[i]);
-        kq.regWrite(clientWrite[i]);
+        kq.reg(clientRead[i]);
+        kq.reg(clientWrite[i]);
 
         workers.emplace_back(
             [rn = requestsNumber](FdObj& fdoRead, FdObj& fdoWrite) {

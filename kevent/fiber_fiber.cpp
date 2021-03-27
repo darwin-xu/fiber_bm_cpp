@@ -32,14 +32,8 @@ int main(int argc, char* argv[])
 
                 Kq<FdObj> kqWorker;
 
-                auto readOrYeild = [](Kq<FdObj>& kq, FdObj& fdo) {
-                    kq.regRead(fdo);
-                    fdo.yield();
-                    kq.unreg(fdo);
-                };
-
-                auto writeOrYeild = [](Kq<FdObj>& kq, FdObj& fdo) {
-                    kq.regWrite(fdo);
+                auto operateOrYeild = [](Kq<FdObj>& kq, FdObj& fdo) {
+                    kq.reg(fdo);
                     fdo.yield();
                     kq.unreg(fdo);
                 };
@@ -61,8 +55,7 @@ int main(int argc, char* argv[])
                                     bn,
                                     &crd = clientRead,
                                     &cwt = clientWrite,
-                                    &readOrYeild,
-                                    &writeOrYeild,
+                                    &operateOrYeild,
                                     &reactor,
                                     &kqClient] {
                     auto        clientCount = cn;
@@ -70,12 +63,9 @@ int main(int argc, char* argv[])
                     for (auto i = 0; i < cn; ++i)
                     {
                         clientFibers.emplace_back(
-                            [rn,
-                             bn,
-                             &clientCount,
-                             &kqClient,
-                             &readOrYeild,
-                             &writeOrYeild](FdObj& fdoRead, FdObj& fdoWrite) {
+                            [rn, bn, &clientCount, &kqClient, &operateOrYeild](
+                                FdObj& fdoRead,
+                                FdObj& fdoWrite) {
                                 for (auto n = 0; n < rn / bn; ++n)
                                 {
                                     for (auto j = 0; j < bn; ++j)
@@ -83,7 +73,7 @@ int main(int argc, char* argv[])
                                         operate(fdoWrite.getFd(),
                                                 QUERY_TEXT,
                                                 write,
-                                                std::bind(writeOrYeild,
+                                                std::bind(operateOrYeild,
                                                           std::ref(kqClient),
                                                           std::ref(fdoWrite)));
                                     }
@@ -92,7 +82,7 @@ int main(int argc, char* argv[])
                                         operate(fdoRead.getFd(),
                                                 RESPONSE_TEXT,
                                                 read,
-                                                std::bind(readOrYeild,
+                                                std::bind(operateOrYeild,
                                                           std::ref(kqClient),
                                                           std::ref(fdoRead)));
                                     }
@@ -117,23 +107,21 @@ int main(int argc, char* argv[])
                 for (auto i = 0; i < cn; ++i)
                 {
                     workerFibers.emplace_back(
-                        [rn,
-                         &workersCount,
-                         &kqWorker,
-                         &readOrYeild,
-                         &writeOrYeild](FdObj& fdoRead, FdObj& fdoWrite) {
+                        [rn, &workersCount, &kqWorker, &operateOrYeild](
+                            FdObj& fdoRead,
+                            FdObj& fdoWrite) {
                             for (auto n = 0; n < rn; ++n)
                             {
                                 operate(fdoRead.getFd(),
                                         QUERY_TEXT,
                                         read,
-                                        std::bind(readOrYeild,
+                                        std::bind(operateOrYeild,
                                                   std::ref(kqWorker),
                                                   std::ref(fdoRead)));
                                 operate(fdoWrite.getFd(),
                                         RESPONSE_TEXT,
                                         write,
-                                        std::bind(writeOrYeild,
+                                        std::bind(operateOrYeild,
                                                   std::ref(kqWorker),
                                                   std::ref(fdoWrite)));
                             }

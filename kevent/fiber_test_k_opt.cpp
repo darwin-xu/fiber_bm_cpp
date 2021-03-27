@@ -10,8 +10,10 @@ using FiberVector = std::vector<boost::fibers::fiber>;
 int main(int argc, char* argv[])
 {
     // 1. Preparation
-    auto [clientsNumber, requestsNumber] =
-        parseArg2(argc, argv, "<clients number> <requests number>");
+    auto [clientsNumber, requestsNumber, batchesNumber] =
+        parseArg3(argc,
+                  argv,
+                  "<clients number> <requests number> <batches number>");
 
     auto [workerRead, workerWrite, clientRead, clientWrite] =
         initPipes2(clientsNumber, requestsNumber, true);
@@ -25,8 +27,8 @@ int main(int argc, char* argv[])
     FiberVector workerFibers;
     for (auto i = 0; i < clientsNumber; ++i)
     {
-        kqClient.regRead(clientRead[i]);
-        kqClient.regWrite(clientWrite[i]);
+        kqClient.reg(clientRead[i]);
+        kqClient.reg(clientWrite[i]);
 
         workerFibers.emplace_back(
             [rn = requestsNumber, &workersCount, &kqWorker](FdObj& fdoRead,
@@ -37,7 +39,7 @@ int main(int argc, char* argv[])
                             QUERY_TEXT,
                             read,
                             [&kqWorker, &fdoRead] {
-                                kqWorker.regRead(fdoRead);
+                                kqWorker.reg(fdoRead);
                                 fdoRead.yield();
                                 kqWorker.unreg(fdoRead);
                             });
@@ -46,7 +48,7 @@ int main(int argc, char* argv[])
                             RESPONSE_TEXT,
                             write,
                             [&kqWorker, &fdoWrite] {
-                                kqWorker.regWrite(fdoWrite);
+                                kqWorker.reg(fdoWrite);
                                 fdoWrite.yield();
                                 kqWorker.unreg(fdoWrite);
                             });
@@ -68,7 +70,7 @@ int main(int argc, char* argv[])
         }
     });
 
-    std::thread client([&kqClient] {
+    std::thread client([&kqClient, bn = batchesNumber] {
         while (true)
         {
             auto fdos = kqClient.wait();
@@ -76,13 +78,21 @@ int main(int argc, char* argv[])
                 break;
             for (auto fdo : fdos)
             {
-                if (--fdo->getCount() == 0)
-                    kqClient.unreg(*fdo);
-
                 if (fdo->isRead())
+                {
                     operate(fdo->getFd(), RESPONSE_TEXT, read);
+                    if (--fdo->getCount() == 0)
+                        kqClient.unreg(*fdo);
+                }
                 else
-                    operate(fdo->getFd(), QUERY_TEXT, write);
+                {
+                    for (int i = 0; i < bn; ++i)
+                    {
+                        operate(fdo->getFd(), QUERY_TEXT, write);
+                        if (--fdo->getCount() == 0)
+                            kqClient.unreg(*fdo);
+                    }
+                }
             }
         }
     });

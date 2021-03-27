@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include <atomic>
 
 #include <boost/fiber/all.hpp>
 
@@ -31,11 +32,15 @@ public:
 
     void yield();
 
+    static long getYieldCount();
+
 private:
     int     _fd;
     int     _count;
     bool    _read;
     Promise _promise;
+
+    static std::atomic_long _yieldCount;
 };
 
 using FdVector = std::vector<FdObj>;

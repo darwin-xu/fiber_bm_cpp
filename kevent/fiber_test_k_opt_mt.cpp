@@ -38,8 +38,8 @@ int main(int argc, char* argv[])
                 FiberVector workerFibers;
                 for (auto i = 0; i < cn; ++i)
                 {
-                    kqClient.regRead(clientRead[i]);
-                    kqClient.regWrite(clientWrite[i]);
+                    kqClient.reg(clientRead[i]);
+                    kqClient.reg(clientWrite[i]);
 
                     workerFibers.emplace_back(
                         [rn, &workersCount, &kqWorker](FdObj& fdoRead,
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
                                         QUERY_TEXT,
                                         read,
                                         [&kqWorker, &fdoRead] {
-                                            kqWorker.regRead(fdoRead);
+                                            kqWorker.reg(fdoRead);
                                             fdoRead.yield();
                                             kqWorker.unreg(fdoRead);
                                         });
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
                                         RESPONSE_TEXT,
                                         write,
                                         [&kqWorker, &fdoWrite] {
-                                            kqWorker.regWrite(fdoWrite);
+                                            kqWorker.reg(fdoWrite);
                                             fdoWrite.yield();
                                             kqWorker.unreg(fdoWrite);
                                         });

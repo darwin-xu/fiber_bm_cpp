@@ -25,20 +25,20 @@ int main(int argc, char* argv[])
     FiberVector workerFibers;
     for (auto i = 0; i < clientsNumber; ++i)
     {
-        kqClient.regRead(clientRead[i]);
-        kqClient.regWrite(clientWrite[i]);
+        kqClient.reg(clientRead[i]);
+        kqClient.reg(clientWrite[i]);
 
         workerFibers.emplace_back(
             [rn = requestsNumber, &workersCount, &kqWorker](FdObj& fdoRead,
                                                             FdObj& fdoWrite) {
                 for (auto n = 0; n < rn; ++n)
                 {
-                    kqWorker.regRead(fdoRead);
+                    kqWorker.reg(fdoRead);
                     fdoRead.yield();
                     kqWorker.unreg(fdoRead);
                     operate(fdoRead.getFd(), QUERY_TEXT, read);
 
-                    kqWorker.regWrite(fdoWrite);
+                    kqWorker.reg(fdoWrite);
                     fdoWrite.yield();
                     kqWorker.unreg(fdoWrite);
                     operate(fdoWrite.getFd(), RESPONSE_TEXT, write);
