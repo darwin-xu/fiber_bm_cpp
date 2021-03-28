@@ -5,8 +5,6 @@
 #include "../Kq.hpp"
 #include "../FdObj.hpp"
 
-using FiberVector = std::vector<boost::fibers::fiber>;
-
 int main(int argc, char* argv[])
 {
     // 1. Preparation
@@ -16,7 +14,7 @@ int main(int argc, char* argv[])
                   "<clients number> <requests number> <batches number>");
 
     auto [workerRead, workerWrite, clientRead, clientWrite] =
-        initPipes2(clientsNumber, requestsNumber, true);
+        initPipes2(clientsNumber, requestsNumber, true, false);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
@@ -78,19 +76,17 @@ int main(int argc, char* argv[])
                 break;
             for (auto fdo : fdos)
             {
-                if (fdo->isRead())
+                for (int i = 0; i < bn; ++i)
                 {
-                    operate(fdo->getFd(), RESPONSE_TEXT, read);
-                    if (--fdo->getCount() == 0)
-                        kqClient.unreg(*fdo);
-                }
-                else
-                {
-                    for (int i = 0; i < bn; ++i)
-                    {
+                    if (fdo->isRead())
+                        operate(fdo->getFd(), RESPONSE_TEXT, read);
+                    else
                         operate(fdo->getFd(), QUERY_TEXT, write);
-                        if (--fdo->getCount() == 0)
-                            kqClient.unreg(*fdo);
+
+                    if (--fdo->getCount() == 0)
+                    {
+                        kqClient.unreg(*fdo);
+                        break;
                     }
                 }
             }

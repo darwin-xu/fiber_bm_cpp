@@ -63,9 +63,8 @@ void printStat(double workload, const TP& start, const TP& end)
               << std::endl;
 }
 
-std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
-    int  pipesNumber,
-    bool nonblock)
+std::tuple<IntVector, IntVector, IntVector, IntVector>
+initPipes1(int pipesNumber, bool workerNonblock, bool clientNonblock)
 {
     IntVector workerRead;
     IntVector workerWrite;
@@ -80,12 +79,16 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
         auto r2 = pipe(p2);
         assert(r2 == 0 && "Maybe too many opened files.");
 
-        if (nonblock)
+        if (workerNonblock)
         {
             setNonblock(p1[0]);
+            setNonblock(p2[1]);
+        }
+
+        if (clientNonblock)
+        {
             setNonblock(p1[1]);
             setNonblock(p2[0]);
-            setNonblock(p2[1]);
         }
 
         workerRead.push_back(p1[0]);
@@ -97,8 +100,11 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
     return std::make_tuple(workerRead, workerWrite, clientRead, clientWrite);
 }
 
-std::tuple<FdVector, FdVector, FdVector, FdVector>
-initPipes2(int pipesNumber, int requestsNumber, bool nonblock)
+std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(
+    int  pipesNumber,
+    int  requestsNumber,
+    bool workerNonblock,
+    bool clientNonblock)
 {
     FdVector workerRead;
     FdVector workerWrite;
@@ -113,12 +119,16 @@ initPipes2(int pipesNumber, int requestsNumber, bool nonblock)
         auto r2 = pipe(p2);
         assert(r2 == 0 && "Maybe too many opened files.");
 
-        if (nonblock)
+        if (workerNonblock)
         {
             setNonblock(p1[0]);
+            setNonblock(p2[1]);
+        }
+
+        if (clientNonblock)
+        {
             setNonblock(p1[1]);
             setNonblock(p2[0]);
-            setNonblock(p2[1]);
         }
 
         workerRead.emplace_back(p1[0], requestsNumber, true);

@@ -27,6 +27,7 @@ using IntVector    = std::vector<int>;
 using ThreadVector = std::vector<std::thread>;
 using PIDVector    = std::vector<pid_t>;
 using Int2IntMap   = std::unordered_map<int, int>;
+using FiberVector  = std::vector<boost::fibers::fiber>;
 
 extern std::string QUERY_TEXT;
 extern std::string RESPONSE_TEXT;
@@ -91,10 +92,14 @@ void printStat(double workload, const TP& start, const TP& end);
 
 std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
     int  pipesNumber,
-    bool nonblock = false);
+    bool workerNonblock = false,
+    bool clientNonblock = false);
 
-std::tuple<FdVector, FdVector, FdVector, FdVector>
-initPipes2(int pipesNumber, int requestsNumber, bool nonblock = false);
+std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(
+    int  pipesNumber,
+    int  requestsNumber,
+    bool workerNonblock = false,
+    bool clientNonblock = false);
 
 void setNonblock(int fd);
 

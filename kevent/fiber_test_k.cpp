@@ -5,8 +5,6 @@
 #include "../Kq.hpp"
 #include "../FdObj.hpp"
 
-using FiberVector = std::vector<boost::fibers::fiber>;
-
 int main(int argc, char* argv[])
 {
     // 1. Preparation
@@ -14,7 +12,7 @@ int main(int argc, char* argv[])
         parseArg2(argc, argv, "<clients number> <requests number>");
 
     auto [workerRead, workerWrite, clientRead, clientWrite] =
-        initPipes2(clientsNumber, requestsNumber, true);
+        initPipes2(clientsNumber, requestsNumber, true, false);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();

@@ -5,8 +5,6 @@
 #include "../Kq.hpp"
 #include "../FdObj.hpp"
 
-using FiberVector = std::vector<boost::fibers::fiber>;
-
 int main(int argc, char* argv[])
 {
     // 1. Preparation
@@ -28,7 +26,7 @@ int main(int argc, char* argv[])
         workerFiberThreads.emplace_back(
             [t, cn = clientNumber, rn = requestsNumber, bn = batchesNumber] {
                 auto [workerRead, workerWrite, clientRead, clientWrite] =
-                    initPipes2(cn, rn, true);
+                    initPipes2(cn, rn, true, true);
 
                 Kq<FdObj> kqWorker;
 

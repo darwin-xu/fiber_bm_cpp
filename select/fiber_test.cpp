@@ -49,7 +49,6 @@ int main(int argc, char* argv[])
     auto [workerRead, workerWrite, clientRead, clientWrite] =
         initPipes1(clientsNumber);
 
-    using FiberVector = std::vector<boost::fibers::fiber>;
     using FlagVector  = std::vector<Flag>;
 
     FiberVector fv;

@@ -5,8 +5,6 @@
 #include "../Kq.hpp"
 #include "../FdObj.hpp"
 
-using FiberVector = std::vector<boost::fibers::fiber>;
-
 int main(int argc, char* argv[])
 {
     // 1. Preparation
@@ -16,108 +14,117 @@ int main(int argc, char* argv[])
                   "<clients number> <requests number> <threads number> "
                   "<batches number>");
 
-    assert(requestsNumber % batchesNumber == 0 &&
-           "requests number should be divisible by batches number");
-
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
     ThreadVector fiberThreads;
     for (auto t = 0; t < threadsNumber; ++t)
     {
-        fiberThreads.emplace_back(
-            [t, cn = clientsNumber, rn = requestsNumber, bn = batchesNumber] {
-                auto [workerRead, workerWrite, clientRead, clientWrite] =
-                    initPipes2(cn, rn, true);
+        fiberThreads.emplace_back([t,
+                                   cn = clientsNumber,
+                                   rn = requestsNumber,
+                                   bn = batchesNumber] {
+            auto [workerRead, workerWrite, clientRead, clientWrite] =
+                initPipes2(cn, rn, true, true);
 
-                Kq<FdObj> kqWorker;
-                Kq<FdObj> kqClient;
+            Kq<FdObj> kqWorker;
+            Kq<FdObj> kqClient;
 
-                auto workersCount = cn;
+            auto workersCount = cn;
 
-                FiberVector workerFibers;
-                for (auto i = 0; i < cn; ++i)
+            FiberVector workerFibers;
+            for (auto i = 0; i < cn; ++i)
+            {
+                kqClient.reg(clientRead[i]);
+                kqClient.reg(clientWrite[i]);
+
+                workerFibers.emplace_back(
+                    [rn, &workersCount, &kqWorker](FdObj& fdoRead,
+                                                   FdObj& fdoWrite) {
+                        for (auto n = 0; n < rn; ++n)
+                        {
+                            operate(fdoRead.getFd(),
+                                    QUERY_TEXT,
+                                    read,
+                                    [&kqWorker, &fdoRead] {
+                                        kqWorker.reg(fdoRead);
+                                        fdoRead.yield();
+                                        kqWorker.unreg(fdoRead);
+                                    });
+
+                            operate(fdoWrite.getFd(),
+                                    RESPONSE_TEXT,
+                                    write,
+                                    [&kqWorker, &fdoWrite] {
+                                        kqWorker.reg(fdoWrite);
+                                        fdoWrite.yield();
+                                        kqWorker.unreg(fdoWrite);
+                                    });
+                        }
+                        --workersCount;
+                    },
+                    std::ref(workerRead[i]),
+                    std::ref(workerWrite[i]));
+            }
+
+            boost::fibers::fiber reactorFiber([&workersCount, &kqWorker] {
+                while (workersCount != 0)
                 {
-                    kqClient.reg(clientRead[i]);
-                    kqClient.reg(clientWrite[i]);
-
-                    workerFibers.emplace_back(
-                        [rn, &workersCount, &kqWorker](FdObj& fdoRead,
-                                                       FdObj& fdoWrite) {
-                            for (auto n = 0; n < rn; ++n)
-                            {
-                                operate(fdoRead.getFd(),
-                                        QUERY_TEXT,
-                                        read,
-                                        [&kqWorker, &fdoRead] {
-                                            kqWorker.reg(fdoRead);
-                                            fdoRead.yield();
-                                            kqWorker.unreg(fdoRead);
-                                        });
-
-                                operate(fdoWrite.getFd(),
-                                        RESPONSE_TEXT,
-                                        write,
-                                        [&kqWorker, &fdoWrite] {
-                                            kqWorker.reg(fdoWrite);
-                                            fdoWrite.yield();
-                                            kqWorker.unreg(fdoWrite);
-                                        });
-                            }
-                            --workersCount;
-                        },
-                        std::ref(workerRead[i]),
-                        std::ref(workerWrite[i]));
+                    for (auto fdo : kqWorker.wait())
+                    {
+                        fdo->resume();
+                        boost::this_fiber::yield();
+                    }
                 }
+            });
 
-                boost::fibers::fiber reactorFiber([&workersCount, &kqWorker] {
-                    while (workersCount != 0)
+            std::thread client([&kqClient, bn] {
+                while (true)
+                {
+                    auto fdos = kqClient.wait();
+                    if (fdos.empty())
+                        break;
+                    for (auto fdo : fdos)
                     {
-                        for (auto fdo : kqWorker.wait())
+                        for (int i = 0; i < bn; ++i)
                         {
-                            fdo->resume();
-                            boost::this_fiber::yield();
-                        }
-                    }
-                });
+                            bool o = false;
+                            if (fdo->isRead())
+                                o = operate(fdo->getFd(), RESPONSE_TEXT, read);
+                            else
+                                o = operate(fdo->getFd(), QUERY_TEXT, write);
 
-                std::thread client([&kqClient, bn] {
-                    while (true)
-                    {
-                        auto fdos = kqClient.wait();
-                        if (fdos.empty())
-                            break;
-                        for (auto fdo : fdos)
-                        {
-                            for (auto i = 0; i < bn; ++i)
+                            if (!o)
                             {
-                                if (--fdo->getCount() == 0)
-                                    kqClient.unreg(*fdo);
+                                std::cout << "read/write error" << std::endl;
+                                break;
+                            }
 
-                                if (fdo->isRead())
-                                    operate(fdo->getFd(), RESPONSE_TEXT, read);
-                                else
-                                    operate(fdo->getFd(), QUERY_TEXT, write);
+                            if (--fdo->getCount() == 0)
+                            {
+                                kqClient.unreg(*fdo);
+                                break;
                             }
                         }
                     }
-                });
+                }
+            });
 
-                for (auto& f : workerFibers)
-                    f.join();
-                reactorFiber.join();
-                client.join();
+            for (auto& f : workerFibers)
+                f.join();
+            reactorFiber.join();
+            client.join();
 
 #ifndef NDEBUG
-                std::locale our_local(std::cout.getloc(), new separated);
-                std::cout.imbue(our_local);
-                std::cout << "[" << std::setw(2) << t
-                          << "]: kqWorker.wait = " << std::setw(9)
-                          << kqWorker.getWaitCount()
-                          << " kqClient.wait = " << std::setw(9)
-                          << kqClient.getWaitCount() << std::endl;
+            std::locale our_local(std::cout.getloc(), new separated);
+            std::cout.imbue(our_local);
+            std::cout << "[" << std::setw(2) << t
+                      << "]: kqWorker.wait = " << std::setw(9)
+                      << kqWorker.getWaitCount()
+                      << " kqClient.wait = " << std::setw(9)
+                      << kqClient.getWaitCount() << std::endl;
 #endif
-            });
+        });
     }
 
     for (auto& t : fiberThreads)
