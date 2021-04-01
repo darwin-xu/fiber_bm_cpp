@@ -11,6 +11,7 @@
 #include <iostream>
 #include <tuple>
 #include <future>
+#include <type_traits>
 
 #include <string.h>
 #include <assert.h>
@@ -42,7 +43,10 @@ bool operate(
 {
     std::unique_ptr<char[]> temp = std::make_unique<char[]>(str.length());
     auto                    buf  = temp.get();
-    memcpy(buf, str.c_str(), str.length());
+
+    if (std::is_same<decltype(rw), decltype(write)>::value)
+        memcpy(buf, str.c_str(), str.length());
+
     size_t remain = str.length();
     do
     {
@@ -63,6 +67,11 @@ bool operate(
         else if (r == 0)
             return false;
     } while (remain != 0);
+
+    if (std::is_same<decltype(rw), decltype(read)>::value &&
+        memcmp(buf, str.c_str(), str.length()))
+        assert(false && "Data corrupted in transmission.");
+
     return true;
 }
 

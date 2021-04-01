@@ -33,3 +33,4 @@ export CXX=clang++-6.0
 - [ ] batchesNumber of thread_test_mm.cpp is not processed correctly.
 - [ ] Support more accurate time point for each thread.
 - [ ] Use fork to move fibers into dedicated process.
+- [x] Only copy when it is write in operate(), check data when it is read in operate().
