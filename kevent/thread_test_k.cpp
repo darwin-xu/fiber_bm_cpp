@@ -23,10 +23,11 @@ int main(int argc, char* argv[])
         kq.reg(clientWrite[i]);
 
         workers.emplace_back(
-            [rn = requestsNumber](FdObj& fdoRead, FdObj& fdoWrite) {
-                for (auto n = 0; n < rn; ++n)
+            [](FdObj& fdoRead, FdObj& fdoWrite) {
+                while (true)
                 {
-                    operate(fdoRead.getFd(), QUERY_TEXT, read);
+                    if (!operate(fdoRead.getFd(), QUERY_TEXT, read))
+                        break;
                     operate(fdoWrite.getFd(), RESPONSE_TEXT, write);
                 }
             },
@@ -34,29 +35,25 @@ int main(int argc, char* argv[])
             std::ref(workerWrite[i]));
     }
 
-    std::thread client([&kq, &mwt = clientWrite] {
+    std::thread client([&kq] {
         while (true)
         {
-            if (std::find_if(mwt.begin(), mwt.end(), [](FdObj& fdo) -> bool {
-                    return fdo.getCount() != 0;
-                }) == mwt.end())
+            if (auto pipes = kq.wait(); pipes.empty())
                 break;
+            else
+                for (auto p : pipes)
+                {
+                    if (p->isRead())
+                        operate(p->getFd(), RESPONSE_TEXT, read);
+                    else
+                        operate(p->getFd(), QUERY_TEXT, write);
 
-            for (auto fdo : kq.wait())
-            {
-                if (fdo->isRead())
-                {
-                    operate(fdo->getFd(), RESPONSE_TEXT, read);
-                }
-                else
-                {
-                    operate(fdo->getFd(), QUERY_TEXT, write);
-                    if (--fdo->getCount() == 0)
+                    if (--p->getCount() == 0)
                     {
-                        kq.unreg(*fdo);
+                        kq.unreg(*p);
+                        close(p->getFd());
                     }
                 }
-            }
         }
     });
 
