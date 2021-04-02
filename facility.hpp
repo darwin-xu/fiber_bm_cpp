@@ -39,6 +39,7 @@ bool operate(
     std::string& str,
     Action&&     rw,
     YieldAt&&    yieldAt = [] {
+        assert(false && "yield function should be supplied.");
     })
 {
     std::unique_ptr<char[]> temp = std::make_unique<char[]>(str.length());
