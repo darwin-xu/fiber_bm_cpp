@@ -77,20 +77,19 @@ initPipes1(int pipesNumber, bool workerNonblock, bool clientNonblock)
 
     for (auto i = 0; i < pipesNumber; ++i)
     {
-        int p1[2];
-#ifdef SET_SOCKET
-        auto r1 = socketpair(PF_UNIX, SOCK_STREAM, 0, p1);
-#else
-        auto r1 = pipe(p1);
-#endif
-        assert(r1 == 0 && "Maybe too many opened files.");
+        int p1[2], p2[2];
 
-        int p2[2];
 #ifdef SET_SOCKET
+        std::cout << "socketpair()" << std::endl;
+        auto r1 = socketpair(PF_UNIX, SOCK_STREAM, 0, p1);
         auto r2 = socketpair(PF_UNIX, SOCK_STREAM, 0, p2);
 #else
+        std::cout << "pipe()" << std::endl;
+        auto r1 = pipe(p1);
         auto r2 = pipe(p2);
 #endif
+
+        assert(r1 == 0 && "Maybe too many opened files.");
         assert(r2 == 0 && "Maybe too many opened files.");
 
         if (workerNonblock)
@@ -127,20 +126,19 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(
 
     for (auto i = 0; i < pipesNumber; ++i)
     {
-        int p1[2];
-#ifdef SET_SOCKET
-        auto r1 = socketpair(PF_UNIX, SOCK_STREAM, 0, p1);
-#else
-        auto r1 = pipe(p1);
-#endif
-        assert(r1 == 0 && "Maybe too many opened files.");
+        int p1[2], p2[2];
 
-        int p2[2];
 #ifdef SET_SOCKET
+        std::cout << "socketpair()" << std::endl;
+        auto r1 = socketpair(PF_UNIX, SOCK_STREAM, 0, p1);
         auto r2 = socketpair(PF_UNIX, SOCK_STREAM, 0, p2);
 #else
+        std::cout << "pipe()" << std::endl;
+        auto r1 = pipe(p1);
         auto r2 = pipe(p2);
 #endif
+
+        assert(r1 == 0 && "Maybe too many opened files.");
         assert(r2 == 0 && "Maybe too many opened files.");
 
         if (workerNonblock)
