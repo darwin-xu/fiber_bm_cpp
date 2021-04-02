@@ -3,12 +3,16 @@
 #include <iomanip>
 
 #include <unistd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include "facility.hpp"
 #include "separated.hpp"
 
 std::string QUERY_TEXT    = "STATUS";
 std::string RESPONSE_TEXT = "OK";
+
+//#define SET_SOCKET
 
 std::pair<IntVector, IntVector> sselect(const IntVector& rds,
                                         const IntVector& wts)
@@ -73,10 +77,20 @@ initPipes1(int pipesNumber, bool workerNonblock, bool clientNonblock)
 
     for (auto i = 0; i < pipesNumber; ++i)
     {
-        int  p1[2], p2[2];
+        int p1[2];
+#ifdef SET_SOCKET
+        auto r1 = socketpair(PF_UNIX, SOCK_STREAM, 0, p1);
+#else
         auto r1 = pipe(p1);
+#endif
         assert(r1 == 0 && "Maybe too many opened files.");
+
+        int p2[2];
+#ifdef SET_SOCKET
+        auto r2 = socketpair(PF_UNIX, SOCK_STREAM, 0, p2);
+#else
         auto r2 = pipe(p2);
+#endif
         assert(r2 == 0 && "Maybe too many opened files.");
 
         if (workerNonblock)
@@ -113,10 +127,20 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(
 
     for (auto i = 0; i < pipesNumber; ++i)
     {
-        int  p1[2], p2[2];
+        int p1[2];
+#ifdef SET_SOCKET
+        auto r1 = socketpair(PF_UNIX, SOCK_STREAM, 0, p1);
+#else
         auto r1 = pipe(p1);
+#endif
         assert(r1 == 0 && "Maybe too many opened files.");
+
+        int p2[2];
+#ifdef SET_SOCKET
+        auto r2 = socketpair(PF_UNIX, SOCK_STREAM, 0, p2);
+#else
         auto r2 = pipe(p2);
+#endif
         assert(r2 == 0 && "Maybe too many opened files.");
 
         if (workerNonblock)

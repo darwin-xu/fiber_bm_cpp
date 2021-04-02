@@ -13,9 +13,10 @@
 ## Building Instructions
 - mkdir build
 - cd build
-- cmake ..
+- cmake -DBOOST_PATH=<path to boost> -DCMAKE_BUILD_TYPE:STRING=Debug ../..
+- cmake -DBOOST_PATH=<path to boost> -DCMAKE_BUILD_TYPE:STRING=Release ../..
 - cmake --build . -j24
-
+- export LD_LIBRARY_PATH=<path to boost>stage/lib
 ## Override compile
 ```
 export CC=clang-6.0
