@@ -35,17 +35,19 @@ extern std::string RESPONSE_TEXT;
 
 template<class Action, class YieldAt = void (*)(void)>
 bool operate(
-    int          fd,
-    std::string& str,
-    Action&&     rw,
-    YieldAt&&    yieldAt = [] {
+    int                fd,
+    const std::string& str,
+    Action&&           rw,
+    YieldAt&&          yieldAt = [] {
         assert(false && "yield function should be supplied.");
     })
 {
-    std::unique_ptr<char[]> temp = std::make_unique<char[]>(str.length());
-    auto                    buf  = temp.get();
+    std::unique_ptr<char[]> temp   = std::make_unique<char[]>(str.length());
+    auto                    origin = temp.get();
+    auto                    buf    = origin;
 
-    if (std::is_same<decltype(rw), decltype(write)>::value)
+    // if (std::is_same<decltype(rw), decltype(write)>::value)
+    if (typeid(rw) == typeid(write))
         memcpy(buf, str.c_str(), str.length());
 
     size_t remain = str.length();
@@ -69,8 +71,9 @@ bool operate(
             return false;
     } while (remain != 0);
 
-    if (std::is_same<decltype(rw), decltype(read)>::value &&
-        memcmp(buf, str.c_str(), str.length()))
+    // if (std::is_same<decltype(rw), decltype(read)>::value &&
+    if (typeid(rw) == typeid(read) &&
+        memcmp(origin, str.c_str(), str.length()) != 0)
         assert(false && "Data corrupted in transmission.");
 
     return true;
