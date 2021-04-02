@@ -29,9 +29,11 @@ int main(int argc, char* argv[])
     std::thread worker([rd = fildes2[0], wt = fildes1[1]]() {
         while (true)
         {
-            if (!operate(rd, QUERY_TEXT, read))
+            if (!operate(rd, QUERY_TEXT, read, [] {
+                }))
                 break;
-            operate(wt, RESPONSE_TEXT, write);
+            operate(wt, RESPONSE_TEXT, write, [] {
+            });
         }
 
         return std::chrono::steady_clock::now();
@@ -44,9 +46,11 @@ int main(int argc, char* argv[])
         for (auto i = 0; i < rn / bn; ++i)
         {
             for (auto b = 0; b < bn; ++b)
-                operate(wt, QUERY_TEXT, write);
+                operate(wt, QUERY_TEXT, write, [] {
+                });
             for (auto b = 0; b < bn; ++b)
-                operate(rd, RESPONSE_TEXT, read);
+                operate(rd, RESPONSE_TEXT, read, [] {
+                });
         }
         close(rd);
         close(wt);
