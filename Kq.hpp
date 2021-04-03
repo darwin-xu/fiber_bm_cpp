@@ -106,7 +106,7 @@ private:
         fdSet.insert(t.getFd());
 #if defined(MACOS) || defined(FREEBSD)
         struct kevent event;
-        EV_SET(&event, t.getFd(), filter, EV_ADD | EV_CLEAR, 0, 0, &t);
+        EV_SET(&event, t.getFd(), filter, EV_ADD, 0, 0, &t);
         auto r = kevent(_kq, &event, 1, NULL, 0, NULL);
         assert(r != -1 && "kevent() function fails.");
 #endif
