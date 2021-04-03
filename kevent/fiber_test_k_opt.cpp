@@ -12,9 +12,9 @@ int main(int argc, char* argv[])
         parseArg3(argc,
                   argv,
                   "<clients number> <requests number> <batches number>");
-
+    bool usePipe = getEnvUsePipe();
     auto [workerRead, workerWrite, clientRead, clientWrite] =
-        initPipes2(clientsNumber, requestsNumber, true, false);
+        initFDs2(clientsNumber, requestsNumber, usePipe, true, false);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();

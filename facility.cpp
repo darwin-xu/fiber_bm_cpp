@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <stdlib.h>
 
 #include "facility.hpp"
 #include "separated.hpp"
@@ -12,7 +13,7 @@
 std::string QUERY_TEXT    = "STATUS";
 std::string RESPONSE_TEXT = "OK";
 
-//#define SET_SOCKET
+#define SET_SOCKET
 
 std::pair<IntVector, IntVector> sselect(const IntVector& rds,
                                         const IntVector& wts)
@@ -67,8 +68,11 @@ void printStat(double workload, const TP& start, const TP& end)
               << std::endl;
 }
 
-std::tuple<IntVector, IntVector, IntVector, IntVector>
-initPipes1(int pipesNumber, bool workerNonblock, bool clientNonblock)
+std::tuple<IntVector, IntVector, IntVector, IntVector> initFDs1(
+    int  pipesNumber,
+    bool usePipe,
+    bool workerNonblock,
+    bool clientNonblock)
 {
     IntVector workerRead;
     IntVector workerWrite;
@@ -78,16 +82,18 @@ initPipes1(int pipesNumber, bool workerNonblock, bool clientNonblock)
     for (auto i = 0; i < pipesNumber; ++i)
     {
         int p1[2], p2[2];
+        int r1, r2;
 
-#ifdef SET_SOCKET
-        std::cout << "socketpair()" << std::endl;
-        auto r1 = socketpair(PF_UNIX, SOCK_STREAM, 0, p1);
-        auto r2 = socketpair(PF_UNIX, SOCK_STREAM, 0, p2);
-#else
-        std::cout << "pipe()" << std::endl;
-        auto r1 = pipe(p1);
-        auto r2 = pipe(p2);
-#endif
+        if (usePipe)
+        {
+            r1 = pipe(p1);
+            r2 = pipe(p2);
+        }
+        else
+        {
+            r1 = socketpair(PF_UNIX, SOCK_STREAM, 0, p1);
+            r2 = socketpair(PF_UNIX, SOCK_STREAM, 0, p2);
+        }
 
         assert(r1 == 0 && "Maybe too many opened files.");
         assert(r2 == 0 && "Maybe too many opened files.");
@@ -113,11 +119,11 @@ initPipes1(int pipesNumber, bool workerNonblock, bool clientNonblock)
     return std::make_tuple(workerRead, workerWrite, clientRead, clientWrite);
 }
 
-std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(
-    int  pipesNumber,
-    int  requestsNumber,
-    bool workerNonblock,
-    bool clientNonblock)
+std::tuple<FdVector, FdVector, FdVector, FdVector> initFDs2(int  pipesNumber,
+                                                            int  requestsNumber,
+                                                            bool usePipe,
+                                                            bool workerNonblock,
+                                                            bool clientNonblock)
 {
     FdVector workerRead;
     FdVector workerWrite;
@@ -127,16 +133,18 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(
     for (auto i = 0; i < pipesNumber; ++i)
     {
         int p1[2], p2[2];
+        int r1, r2;
 
-#ifdef SET_SOCKET
-        std::cout << "socketpair()" << std::endl;
-        auto r1 = socketpair(PF_UNIX, SOCK_STREAM, 0, p1);
-        auto r2 = socketpair(PF_UNIX, SOCK_STREAM, 0, p2);
-#else
-        std::cout << "pipe()" << std::endl;
-        auto r1 = pipe(p1);
-        auto r2 = pipe(p2);
-#endif
+        if (usePipe)
+        {
+            r1 = pipe(p1);
+            r2 = pipe(p2);
+        }
+        else
+        {
+            r1 = socketpair(PF_UNIX, SOCK_STREAM, 0, p1);
+            r2 = socketpair(PF_UNIX, SOCK_STREAM, 0, p2);
+        }
 
         assert(r1 == 0 && "Maybe too many opened files.");
         assert(r2 == 0 && "Maybe too many opened files.");
@@ -215,4 +223,19 @@ std::tuple<int, int, int, int> parseArg4(int                argc,
                            std::stoi(argv[2]),
                            std::stoi(argv[3]),
                            std::stoi(argv[4]));
+}
+
+bool getEnvUsePipe()
+{
+    auto usePipe = getenv("USE_PIPE");
+    if (usePipe && atoi(usePipe) == 1)
+    {
+        std::cout << "USE_PIPE == 1, use pipe()" << std::endl;
+        return true;
+    }
+    else
+    {
+        std::cout << "USE_PIPE != 1, use socketpair()" << std::endl;
+        return false;
+    }
 }

@@ -8,12 +8,11 @@ int main(int argc, char* argv[])
         parseArg3(argc,
                   argv,
                   "<clients number> <requests number> <batches number>");
-
     assert(requestsNumber % batchesNumber == 0 &&
            "requests number should be divisible by batches number");
-
+    bool usePipe = getEnvUsePipe();
     auto [workerRead, workerWrite, clientRead, clientWrite] =
-        initPipes1(clientsNumber);
+        initFDs1(clientsNumber, usePipe);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();

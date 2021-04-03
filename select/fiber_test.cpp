@@ -45,11 +45,11 @@ int main(int argc, char* argv[])
     // 1. Preparation
     auto [clientsNumber, requestsNumber] =
         parseArg2(argc, argv, "<clients number> <requests number>");
-
+    bool usePipe = getEnvUsePipe();
     auto [workerRead, workerWrite, clientRead, clientWrite] =
-        initPipes1(clientsNumber);
+        initFDs1(clientsNumber, usePipe);
 
-    using FlagVector  = std::vector<Flag>;
+    using FlagVector = std::vector<Flag>;
 
     FiberVector fv;
     FlagVector  fvRead;

@@ -13,6 +13,7 @@ int main(int argc, char* argv[])
                   argv,
                   "<clients number> <requests number> <threads number> "
                   "<batches number>");
+    bool usePipe = getEnvUsePipe();
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
@@ -20,12 +21,13 @@ int main(int argc, char* argv[])
     ThreadVector fiberThreads;
     for (auto t = 0; t < threadsNumber; ++t)
     {
-        fiberThreads.emplace_back([t,
+        fiberThreads.emplace_back([usePipe,
+                                   t,
                                    cn = clientsNumber,
                                    rn = requestsNumber,
                                    bn = batchesNumber] {
             auto [workerRead, workerWrite, clientRead, clientWrite] =
-                initPipes2(cn, rn, true, true);
+                initFDs2(cn, rn, usePipe, true, true);
 
             Kq<FdObj> kqWorker;
             Kq<FdObj> kqClient;

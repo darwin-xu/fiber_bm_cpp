@@ -7,26 +7,16 @@ int main(int argc, char* argv[])
     // 1. Preparation
     auto [requestsNumber, batchesNumber] =
         parseArg2(argc, argv, "<requests number> <batches number>");
-
     assert(requestsNumber % batchesNumber == 0 &&
            "requests number should be divisible by batches number");
-
-    int  fildes1[2];
-    auto r1 = pipe(fildes1);
-    assert(r1 == 0 && "Maybe too many opened files.");
-    int  fildes2[2];
-    auto r2 = pipe(fildes2);
-    assert(r2 == 0 && "Maybe too many opened files.");
-
-    setNonblock(fildes1[0]);
-    setNonblock(fildes1[1]);
-    setNonblock(fildes2[0]);
-    setNonblock(fildes2[1]);
+    bool usePipe = getEnvUsePipe();
+    auto [workerRead, workerWrite, clientRead, clientWrite] =
+        initFDs1(1, usePipe, true, true);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
-    std::thread worker([rd = fildes2[0], wt = fildes1[1]]() {
+    std::thread worker([rd = workerRead[0], wt = workerWrite[0]]() {
         while (true)
         {
             if (!operate(rd, QUERY_TEXT, read, [] {
@@ -41,8 +31,8 @@ int main(int argc, char* argv[])
 
     std::thread client([rn = requestsNumber,
                         bn = batchesNumber,
-                        rd = fildes1[0],
-                        wt = fildes2[1]] {
+                        rd = clientRead[0],
+                        wt = clientWrite[0]] {
         for (auto i = 0; i < rn / bn; ++i)
         {
             for (auto b = 0; b < bn; ++b)

@@ -103,14 +103,16 @@ using STPVector = std::vector<StrTP>;
 
 void printStat(double workload, const TP& start, const TP& end);
 
-std::tuple<IntVector, IntVector, IntVector, IntVector> initPipes1(
+std::tuple<IntVector, IntVector, IntVector, IntVector> initFDs1(
     int  pipesNumber,
+    bool usePipe,
     bool workerNonblock = false,
     bool clientNonblock = false);
 
-std::tuple<FdVector, FdVector, FdVector, FdVector> initPipes2(
+std::tuple<FdVector, FdVector, FdVector, FdVector> initFDs2(
     int  pipesNumber,
     int  requestsNumber,
+    bool usePipe,
     bool workerNonblock = false,
     bool clientNonblock = false);
 
@@ -132,6 +134,8 @@ std::tuple<int, int, int> parseArg3(int                argc,
 std::tuple<int, int, int, int> parseArg4(int                argc,
                                          char*              argv[],
                                          const std::string& prompt);
+
+bool getEnvUsePipe();
 
 inline void removeFD(IntVector& iv, int fd)
 {

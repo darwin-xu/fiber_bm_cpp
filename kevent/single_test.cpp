@@ -8,9 +8,9 @@ int main(int argc, char* argv[])
     // 1. Preparation
     auto [clientsNumber, requestsNumber] =
         parseArg2(argc, argv, "<clients number> <requests number>");
-
+    bool usePipe = getEnvUsePipe();
     auto [workerRead, workerWrite, clientRead, clientWrite] =
-        initPipes2(clientsNumber, requestsNumber);
+        initFDs2(clientsNumber, requestsNumber, usePipe);
 
     Kq<FdObj> kqClient;
     Kq<FdObj> kqWorker;

@@ -6,9 +6,9 @@ int main(int argc, char* argv[])
     // 1. Preparation
     auto [clientsNumber, requestsNumber] =
         parseArg2(argc, argv, "<clients number> <requests number>");
-
+    bool usePipe = getEnvUsePipe();
     auto [workerRead, workerWrite, clientRead, clientWrite] =
-        initPipes1(clientsNumber);
+        initFDs1(clientsNumber, usePipe);
 
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
