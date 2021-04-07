@@ -8,10 +8,11 @@
 int main(int argc, char* argv[])
 {
     // 1. Preparation
-    auto [clientsNumber, requestsNumber, batchesNumber] =
+    auto [clientsNumber, requestsNumber, threadsNumber] =
         parseArg3(argc,
                   argv,
-                  "<clients number> <requests number> <batches number>");
+                  "<clients number> <requests number> <threads number>");
+
     bool usePipe = getEnvUsePipe();
     auto [workerRead, workerWrite, clientRead, clientWrite] =
         initFDs2(clientsNumber, requestsNumber, usePipe, true, false);
@@ -19,14 +20,16 @@ int main(int argc, char* argv[])
     // 2. Start evaluation
     auto start = std::chrono::steady_clock::now();
 
-    Kq<FdObj>   kqWorker;
-    Kq<FdObj>   kqClient;
-    auto        workersCount = clientsNumber;
-    FiberVector workerFibers;
+    // boost::fibers::use_scheduling_algorithm<FifoScheduler>();
+
+    Kq<FdObj>              kqWorker;
+    std::vector<Kq<FdObj>> kqClients(threadsNumber);
+    auto                   workersCount = clientsNumber;
+    FiberVector            workerFibers;
     for (auto i = 0; i < clientsNumber; ++i)
     {
-        kqClient.reg(clientRead[i]);
-        kqClient.reg(clientWrite[i]);
+        kqClients[i % threadsNumber].reg(clientRead[i]);
+        kqClients[i % threadsNumber].reg(clientWrite[i]);
 
         workerFibers.emplace_back(
             [rn = requestsNumber, &workersCount, &kqWorker](FdObj& fdoRead,
@@ -68,35 +71,38 @@ int main(int argc, char* argv[])
         }
     });
 
-    std::thread client([&kqClient, bn = batchesNumber] {
+    auto client = [](Kq<FdObj> kq) {
         while (true)
         {
-            auto fdos = kqClient.wait();
+            auto fdos = kq.wait();
             if (fdos.empty())
                 break;
             for (auto fdo : fdos)
             {
-                for (int i = 0; i < bn; ++i)
-                {
-                    if (fdo->isRead())
-                        operate(fdo->getFd(), RESPONSE_TEXT, read);
-                    else
-                        operate(fdo->getFd(), QUERY_TEXT, write);
+                if (fdo->isRead())
+                    operate(fdo->getFd(), RESPONSE_TEXT, read);
+                else
+                    operate(fdo->getFd(), QUERY_TEXT, write);
 
-                    if (--fdo->getCount() == 0)
-                    {
-                        kqClient.unreg(*fdo);
-                        break;
-                    }
+                if (--fdo->getCount() == 0)
+                {
+                    kq.unreg(*fdo);
+                    break;
                 }
             }
         }
-    });
+    };
+
+    ThreadVector clients;
+    for (auto i = 0; i < threadsNumber; ++i)
+        clients.emplace_back(client, std::ref(kqClients[i]));
 
     for (auto& f : workerFibers)
         f.join();
     reactorFiber.join();
-    client.join();
+
+    for (auto& c : clients)
+        c.join();
 
     auto end = std::chrono::steady_clock::now();
 

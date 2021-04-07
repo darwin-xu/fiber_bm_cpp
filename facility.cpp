@@ -13,8 +13,6 @@
 std::string QUERY_TEXT    = "STATUS";
 std::string RESPONSE_TEXT = "OK";
 
-#define SET_SOCKET
-
 std::pair<IntVector, IntVector> sselect(const IntVector& rds,
                                         const IntVector& wts)
 {
