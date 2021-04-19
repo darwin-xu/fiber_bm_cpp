@@ -108,10 +108,19 @@ std::tuple<IntVector, IntVector, IntVector, IntVector> initFDs1(
             setNonblock(p2[0]);
         }
 
-        workerRead.push_back(p1[0]);
-        workerWrite.push_back(p2[1]);
-        clientRead.push_back(p2[0]);
-        clientWrite.push_back(p1[1]);
+        //       ┌─────────────────────────┐
+        // ┌─────┤0         Pipe1         1│◄─┐
+        // │     └─────────────────────────┘  │
+        // │  ┌────────────Worker─────────────┘
+        // │  │  ┌─────────────────────────┐
+        // │  └──┤0         Pipe2         1│◄─┐
+        // │     └─────────────────────────┘  │
+        // └───────────────Client─────────────┘
+
+        workerRead.push_back(p2[0]);
+        workerWrite.push_back(p1[1]);
+        clientRead.push_back(p1[0]);
+        clientWrite.push_back(p2[1]);
     }
 
     return std::make_tuple(workerRead, workerWrite, clientRead, clientWrite);
@@ -159,10 +168,19 @@ std::tuple<FdVector, FdVector, FdVector, FdVector> initFDs2(int  pipesNumber,
             setNonblock(p2[0]);
         }
 
-        workerRead.emplace_back(p1[0], requestsNumber, true);
-        workerWrite.emplace_back(p2[1], requestsNumber, false);
-        clientRead.emplace_back(p2[0], requestsNumber, true);
-        clientWrite.emplace_back(p1[1], requestsNumber, false);
+        //       ┌─────────────────────────┐
+        // ┌─────┤0         Pipe1         1│◄─┐
+        // │     └─────────────────────────┘  │
+        // │  ┌────────────Worker─────────────┘
+        // │  │  ┌─────────────────────────┐
+        // │  └──┤0         Pipe2         1│◄─┐
+        // │     └─────────────────────────┘  │
+        // └───────────────Client─────────────┘
+
+        workerRead.emplace_back(p2[0], requestsNumber, true);
+        workerWrite.emplace_back(p1[1], requestsNumber, false);
+        clientRead.emplace_back(p1[0], requestsNumber, true);
+        clientWrite.emplace_back(p2[1], requestsNumber, false);
     }
 
     return std::make_tuple(std::move(workerRead),
